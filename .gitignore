@@ -1,0 +1,19 @@
+# Virtual environments
+venv/
+backend/venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Uploads
+backend/uploads/
+
+# Zip files
+*.zip
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env

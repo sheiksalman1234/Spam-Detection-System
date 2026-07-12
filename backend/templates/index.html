@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spam Call Detector</title>
+    <meta name="description" content="Detect spam calls using AI – paste text or upload audio." />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        /* ── Reset & Base ─────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0b0f19;
+            --surface:   #131825;
+            --card:      #1a2035;
+            --border:    #252d44;
+            --text:      #e4e8f1;
+            --muted:     #8892a8;
+            --accent:    #6366f1;
+            --accent2:   #818cf8;
+            --green:     #22c55e;
+            --red:       #ef4444;
+            --orange:    #f97316;
+            --glow:      rgba(99,102,241,.35);
+            --radius:    14px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated BG ──────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -20%, rgba(99,102,241,.15), transparent),
+                radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139,92,246,.1), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ───────────────────────────────────────────── */
+        header {
+            width: 100%; text-align: center;
+            padding: 3rem 1rem 1rem;
+            position: relative; z-index: 1;
+        }
+        header h1 {
+            font-size: 2.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent2), #a78bfa, var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+        header p { color: var(--muted); margin-top: .4rem; font-size: .95rem; }
+
+        /* ── Container ────────────────────────────────────────── */
+        .container {
+            width: 100%; max-width: 720px;
+            padding: 0 1rem 4rem;
+            position: relative; z-index: 1;
+        }
+
+        /* ── Tabs ─────────────────────────────────────────────── */
+        .tabs {
+            display: flex; gap: .5rem;
+            margin: 2rem 0 1.2rem;
+        }
+        .tab-btn {
+            flex: 1; padding: .75rem;
+            background: var(--card); color: var(--muted);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            font-weight: 600; cursor: pointer;
+            transition: all .25s;
+        }
+        .tab-btn.active,
+        .tab-btn:hover {
+            background: var(--accent); color: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 4px 24px var(--glow);
+        }
+
+        /* ── Card ─────────────────────────────────────────────── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            display: none;
+            animation: fadeUp .35s ease;
+        }
+        .card.active { display: block; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Form Elements ────────────────────────────────────── */
+        textarea {
+            width: 100%; min-height: 140px;
+            background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px;
+            padding: 1rem; font-size: .95rem;
+            resize: vertical; font-family: inherit;
+            transition: border-color .2s;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem; text-align: center;
+            cursor: pointer; transition: all .25s;
+            color: var(--muted);
+        }
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(99,102,241,.06);
+        }
+        .drop-zone .icon { font-size: 2.2rem; margin-bottom: .5rem; }
+        .drop-zone input[type="file"] { display: none; }
+        .file-name {
+            margin-top: .8rem; font-size: .85rem;
+            color: var(--accent2); word-break: break-all;
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-top: 1.2rem; width: 100%; padding: .85rem;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            color: #fff; font-weight: 700; font-size: 1rem;
+            border: none; border-radius: 10px; cursor: pointer;
+            transition: transform .15s, box-shadow .25s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--glow); }
+        .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn .spinner {
+            width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            margin-right: .6rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Result Box ───────────────────────────────────────── */
+        .result {
+            margin-top: 1.5rem; border-radius: var(--radius);
+            padding: 1.6rem 1.8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: none;
+            animation: fadeUp .3s ease;
+        }
+        .result.show { display: block; }
+
+        .result-label {
+            font-size: 1.6rem; font-weight: 800;
+            display: flex; align-items: center; gap: .6rem;
+        }
+        .result-label.spam    { color: var(--red); }
+        .result-label.nospan  { color: var(--green); }
+
+        .confidence-bar-wrap {
+            margin-top: 1rem;
+            background: var(--card);
+            border-radius: 8px; height: 10px;
+            overflow: hidden;
+        }
+        .confidence-bar {
+            height: 100%; border-radius: 8px;
+            transition: width .6s cubic-bezier(.22,1,.36,1);
+        }
+        .confidence-text {
+            margin-top: .5rem; font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .transcript-box {
+            margin-top: 1rem; padding: 1rem;
+            background: var(--card); border-radius: 10px;
+            font-size: .88rem; color: var(--muted);
+            line-height: 1.6;
+        }
+        .transcript-box strong { color: var(--text); }
+
+        .probs {
+            margin-top: 1rem; display: flex; gap: 1rem;
+        }
+        .prob-chip {
+            flex: 1; padding: .65rem .8rem;
+            border-radius: 10px; text-align: center;
+            font-weight: 600; font-size: .88rem;
+        }
+        .prob-chip.spam   { background: rgba(239,68,68,.12); color: var(--red); }
+        .prob-chip.safe   { background: rgba(34,197,94,.12); color: var(--green); }
+
+        /* ── Error ────────────────────────────────────────────── */
+        .error-msg {
+            margin-top: 1rem; padding: 1rem;
+            background: rgba(239,68,68,.1);
+            border: 1px solid rgba(239,68,68,.3);
+            border-radius: 10px; color: var(--red);
+            font-size: .9rem; display: none;
+        }
+        .error-msg.show { display: block; }
+
+        /* ── Footer ───────────────────────────────────────────── */
+        footer {
+            margin-top: auto; padding: 1.5rem;
+            text-align: center; color: var(--muted);
+            font-size: .78rem; position: relative; z-index: 1;
+        }
+
+        /* ── Responsive ───────────────────────────────────────── */
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.7rem; }
+            .card { padding: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛡️ SPAM EMAIL CALLDETECTOR</h1>
+    <p>AI-powered detection using DistilBERT — paste text or upload a call recording</p>
+</header>
+
+<div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="text" id="tab-text">📝 Text MSG</button>
+        <button class="tab-btn" data-tab="audio" id="tab-audio">🎙️ Audio Upload</button>
+    </div>
+
+    <!-- Text Card -->
+    <div class="card active" id="card-text">
+        <textarea id="input-text" placeholder="Paste the call transcript here, e.g.&#10;&#10;&quot;Congratulations! You've won a free iPhone. Press 1 to claim now…&quot;"></textarea>
+        <button class="btn" id="btn-text" onclick="analyzeText()">
+            Analyze Text
+        </button>
+        <div class="error-msg" id="err-text"></div>
+        <div class="result" id="res-text"></div>
+    </div>
+
+    <!-- Audio Card -->
+    <div class="card" id="card-audio">
+        <div class="drop-zone" id="drop-zone">
+            <div class="icon">📂</div>
+            <div>Drag & drop an audio file or <strong>click to browse</strong></div>
+            <div style="margin-top:.4rem; font-size:.78rem;">WAV, MP3, OGG, FLAC, M4A, WEBM — max 50 MB</div>
+            <input type="file" id="audio-file" accept=".wav,.mp3,.ogg,.flac,.m4a,.webm" />
+            <div class="file-name" id="file-name"></div>
+        </div>
+        <button class="btn" id="btn-audio" onclick="analyzeAudio()">
+            Analyze Audio
+        </button>
+        <div class="error-msg" id="err-audio"></div>
+        <div class="result" id="res-audio"></div>
+    </div>
+</div>
+
+<footer>Spam Call Detector &mdash; Powered by DistilBERT &amp; Flask</footer>
+
+<script>
+    // ── Tab switching ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('card-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ── Drop zone ──
+    const dropZone  = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('audio-file');
+    const fileName  = document.getElementById('file-name');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showFile(); }
+    });
+    fileInput.addEventListener('change', showFile);
+    function showFile() {
+        fileName.textContent = fileInput.files[0] ? '📎 ' + fileInput.files[0].name : '';
+    }
+
+    // ── Helpers ──
+    function setLoading(btn, loading) {
+        if (loading) {
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Analyzing…';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = btn.id === 'btn-text' ? 'Analyze Text' : 'Analyze Audio';
+        }
+    }
+
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg; el.classList.add('show');
+    }
+    function clearFeedback(errId, resId) {
+        document.getElementById(errId).classList.remove('show');
+        const r = document.getElementById(resId);
+        r.classList.remove('show'); r.innerHTML = '';
+    }
+
+    function renderResult(container, data) {
+        const isSpam = data.label === 'Spam';
+        const barColor = isSpam ? 'var(--red)' : 'var(--green)';
+        let html = `
+            <div class="result-label ${isSpam ? 'spam' : 'nospan'}">
+                ${isSpam ? '🚨' : '✅'} ${data.label}
+            </div>
+            <div class="confidence-bar-wrap">
+                <div class="confidence-bar" style="width:${data.confidence}%;background:${barColor}"></div>
+            </div>
+            <div class="confidence-text">Confidence: ${data.confidence}%</div>
+            <div class="probs">
+                <div class="prob-chip safe">✅ Not Spam: ${data.probabilities['Not Spam']}%</div>
+                <div class="prob-chip spam">🚨 Spam: ${data.probabilities['Spam']}%</div>
+            </div>`;
+        if (data.transcript) {
+            html += `<div class="transcript-box"><strong>Transcript:</strong><br/>${data.transcript}</div>`;
+        }
+        container.innerHTML = html;
+        container.classList.add('show');
+    }
+
+    // ── API calls ──
+    async function analyzeText() {
+        const btn  = document.getElementById('btn-text');
+        const text = document.getElementById('input-text').value.trim();
+        clearFeedback('err-text', 'res-text');
+        if (!text) { showError('err-text', 'Please enter some text.'); return; }
+        setLoading(btn, true);
+        try {
+            const resp = await fetch('/predict/text', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Server error');
+            renderResult(document.getElementById('res-text'), data);
+        } catch (e) { showError('err-text', e.message); }
+        finally { setLoading(btn, false); }
+    }
+
+    async function analyzeAudio() {
+        const btn = document.getElementById('btn-audio');
+        clearFeedback('err-audio', 'res-audio');
+        if (!fileInput.files.length) { showError('err-audio', 'Please select an audio file.'); return; }
+        setLoading(btn, true);
+        try {
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Server error');
+            renderResult(document.getElementById('res-audio'), data);
+        } catch (e) { showError('err-audio', e.message); }
+        finally { setLoading(btn, false); }
+    }
+</script>
+
+</body>
+</html>
