@@ -2,6 +2,7 @@ import os
 
 if os.name == "nt":
     os.environ["PATH"] = r"C:\ffmpeg\bin;" + os.environ.get("PATH", "")
+    
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
