@@ -1,7 +1,7 @@
 venv/
 backend/venv/
+.git
+.vscode
 __pycache__/
 *.pyc
-.git
-.gitignore
 upload.zip
