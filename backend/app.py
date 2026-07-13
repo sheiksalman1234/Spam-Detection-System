@@ -65,6 +65,37 @@ def health():
     return {"status": "OK", "device": str(device)}
 
 
+SPAM_KEYWORDS = [
+    ("otp", "OTP sharing request — never share OTP with anyone"),
+    ("prize", "Prize/lottery scam — you didn't enter any contest"),
+    ("won", "Fake winner alert — common scam tactic"),
+    ("lottery", "Lottery scam — ignore and block"),
+    ("gift card", "Gift card scam — no legitimate company asks for gift cards"),
+    ("loan", "Loan offer scam — verify with official bank before responding"),
+    ("pre-approved", "Pre-approved loan scam — do not share personal details"),
+    ("account blocked", "Account block threat — call your bank directly to verify"),
+    ("verify your account", "Phishing attempt — do not click any links"),
+    ("click here", "Suspicious link — do not click unknown links"),
+    ("call now", "Urgency tactic — scammers create fake urgency"),
+    ("limited time", "Urgency tactic — pressure to act fast is a red flag"),
+    ("free", "Free offer bait — verify before responding"),
+    ("congratulations", "Fake congratulations — common spam opener"),
+    ("irs", "IRS/tax scam — government agencies don't call unexpectedly"),
+    ("tax", "Tax scam — verify with official tax authority"),
+    ("arrest", "Threat scam — police/agencies don't threaten via calls"),
+    ("social security", "SSN scam — never share social security number over call"),
+    ("password", "Password phishing — never share passwords"),
+    ("credit card", "Credit card scam — verify with your bank directly"),
+]
+
+
+@app.post("/suggestions")
+def get_suggestions(data: TextRequest):
+    text_lower = data.text.lower()
+    found = [msg for kw, msg in SPAM_KEYWORDS if kw in text_lower]
+    return {"suggestions": list(dict.fromkeys(found))}  # deduplicate
+
+
 @app.post("/predict/text")
 def predict_text(data: TextRequest):
     if not data.text.strip():
