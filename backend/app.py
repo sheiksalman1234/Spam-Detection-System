@@ -18,19 +18,28 @@ app = FastAPI(title="AI Spam Call Detection API", version="1.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-MODEL_PATH = "model/SpamCallDetector"
+MODEL_NAME = "Salmansheik/spam-call-detector"
 
-print("Loading AI model...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
+print("Loading tokenizer...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+print("Loading model...")
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model.to(device)
 model.eval()
-print("Model loaded!")
 
-print("Loading Whisper...")
-whisper_model = whisper.load_model("base")
-print("Whisper loaded!")
+print("Model loaded successfully!")
+
+whisper_model = None
+
+def get_whisper():
+    global whisper_model
+    if whisper_model is None:
+        whisper_model = whisper.load_model("tiny")
+    return whisper_model
 
 
 class TextRequest(BaseModel):
@@ -110,7 +119,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
     try:
-        result = whisper_model.transcribe(tmp_path)
+        model = get_whisper()
+        result = model.transcribe(tmp_path)
         transcript = result["text"].strip()
         if not transcript:
             raise HTTPException(status_code=422, detail="Could not transcribe audio")
@@ -122,10 +132,13 @@ async def transcribe_audio(file: UploadFile = File(...)):
 @app.post("/predict/audio")
 async def predict_audio(file: UploadFile = File(...)):
     suffix = os.path.splitext(file.filename)[-1] or ".tmp"
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
+
     try:
+        whisper_model = get_whisper()
         result = whisper_model.transcribe(tmp_path)
         transcript = result["text"].strip()
         if not transcript:
