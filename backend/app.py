@@ -148,3 +148,4 @@ async def predict_audio(file: UploadFile = File(...)):
         return response
     finally:
         os.unlink(tmp_path)
+
