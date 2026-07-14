@@ -75,49 +75,79 @@ def classify(text: str) -> dict:
 
 
 def detect_ai_voice(audio_path: str) -> dict:
-    """
-    Detect if voice is AI-generated or human using audio features.
-    AI voices tend to have: low pitch variance, high spectral flatness consistency,
-    unnatural zero crossing rate patterns.
-    """
     try:
-        y, sr = librosa.load(audio_path, sr=None, mono=True)
+        y, sr = librosa.load(audio_path, sr=16000, mono=True)
 
-        # Pitch variance — AI voices are unnaturally consistent
-        f0, _, _ = librosa.pyin(y, fmin=50, fmax=500, sr=sr)
+        # 1. Pitch analysis — AI voices have very low pitch variance
+        f0, _, _ = librosa.pyin(y, fmin=60, fmax=400, sr=sr)
         f0_clean = f0[~np.isnan(f0)]
-        pitch_variance = float(np.std(f0_clean)) if len(f0_clean) > 0 else 0.0
+        pitch_std = float(np.std(f0_clean)) if len(f0_clean) > 10 else 999.0
 
-        # Spectral flatness — AI voices have higher flatness
-        spec_flatness = librosa.feature.spectral_flatness(y=y)[0]
-        flatness_mean = float(np.mean(spec_flatness))
+        # 2. Spectral flatness — AI voices are unnaturally flat
+        flatness = librosa.feature.spectral_flatness(y=y)[0]
+        flatness_std = float(np.std(flatness))  # low std = too consistent = AI
 
-        # Zero crossing rate variance — AI voices are more regular
-        zcr = librosa.feature.zero_crossing_rate(y)[0]
-        zcr_variance = float(np.var(zcr))
+        # 3. Spectral rolloff variance — AI voices lack natural rolloff variation
+        rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
+        rolloff_std = float(np.std(rolloff))
 
-        # MFCC variance — human voices have more variation
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        mfcc_variance = float(np.mean(np.var(mfcc, axis=1)))
+        # 4. MFCC delta — measures how much voice changes over time
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
+        mfcc_delta = librosa.feature.delta(mfcc)
+        mfcc_delta_mean = float(np.mean(np.abs(mfcc_delta)))
 
-        # Scoring: low pitch variance + high flatness + low zcr variance = AI
+        # 5. Harmonic-to-noise ratio — AI voices are too clean
+        harmonic, percussive = librosa.effects.hpss(y)
+        hnr = float(np.mean(np.abs(harmonic)) / (np.mean(np.abs(percussive)) + 1e-6))
+
+        # 6. Tempo regularity — AI voices have robotic rhythm
+        tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
+        beat_intervals = np.diff(beats) if len(beats) > 1 else np.array([0])
+        beat_regularity = float(np.std(beat_intervals))
+
         ai_score = 0
-        if pitch_variance < 20:
-            ai_score += 35
-        if flatness_mean > 0.1:
-            ai_score += 25
-        if zcr_variance < 0.001:
-            ai_score += 20
-        if mfcc_variance < 50:
-            ai_score += 20
 
-        is_ai = ai_score >= 50
+        # Low pitch variance = AI (human speech varies naturally)
+        if pitch_std < 15:
+            ai_score += 25
+        elif pitch_std < 30:
+            ai_score += 10
+
+        # Low spectral flatness std = AI (too consistent)
+        if flatness_std < 0.02:
+            ai_score += 20
+        elif flatness_std < 0.04:
+            ai_score += 10
+
+        # Low rolloff std = AI
+        if rolloff_std < 300:
+            ai_score += 15
+        elif rolloff_std < 600:
+            ai_score += 7
+
+        # Low MFCC delta = AI (not enough natural variation)
+        if mfcc_delta_mean < 1.5:
+            ai_score += 20
+        elif mfcc_delta_mean < 3.0:
+            ai_score += 10
+
+        # Very high HNR = AI (too clean, no background noise)
+        if hnr > 10:
+            ai_score += 10
+
+        # Very regular beat = AI
+        if beat_regularity < 2:
+            ai_score += 10
+
+        is_ai = ai_score >= 55
+        confidence = min(ai_score + 10, 99) if is_ai else min((100 - ai_score) + 10, 99)
+
         return {
             "voice_type": "AI Generated" if is_ai else "Human",
             "ai_score": ai_score,
-            "confidence": ai_score if is_ai else (100 - ai_score)
+            "confidence": confidence
         }
-    except Exception:
+    except Exception as e:
         return {"voice_type": "Unknown", "ai_score": 0, "confidence": 0}
 
 
