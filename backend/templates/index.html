@@ -137,6 +137,27 @@
         .drop-zone input[type="file"] { display: none; }
         .file-name { margin-top: .8rem; font-size: .85rem; color: var(--accent2); word-break: break-all; }
 
+        /* Language selector */
+        .lang-select {
+            width: 100%; padding: .65rem .9rem;
+            background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: .9rem; font-family: inherit;
+            margin-bottom: .8rem; cursor: pointer;
+        }
+        .lang-select:focus { outline: none; border-color: var(--accent); }
+
+        /* Voice type badge */
+        .voice-badge {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .4rem .9rem; border-radius: 20px;
+            font-size: .82rem; font-weight: 700; margin-top: .8rem;
+        }
+        .voice-badge.human { background: rgba(34,197,94,.15); color: var(--green); }
+        .voice-badge.ai    { background: rgba(239,68,68,.15); color: var(--red); }
+        .voice-badge.unknown { background: rgba(136,146,168,.15); color: var(--muted); }
+        .detected-lang { font-size: .78rem; color: var(--muted); margin-top: .4rem; }
+
         /* Audio player */
         .audio-player-wrap { margin-top: 1rem; display: none; }
         .audio-player-wrap.show { display: block; }
@@ -282,6 +303,12 @@
 
     <!-- Audio Card -->
     <div class="card" id="card-audio">
+        <select class="lang-select" id="lang-select">
+            <option value="auto">🌐 Auto Detect Language</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="hi">🇮🇳 Hindi</option>
+            <option value="te">🇮🇳 Telugu</option>
+        </select>
         <div class="drop-zone" id="drop-zone">
             <div class="icon">📂</div>
             <div>Drag & drop an audio file or <strong>click to browse</strong></div>
@@ -414,11 +441,21 @@
         try {
             const fd = new FormData();
             fd.append('file', fileInput.files[0]);
+            fd.append('language', document.getElementById('lang-select').value);
             const resp = await fetch('/transcribe', { method: 'POST', body: fd });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'Transcription failed');
             document.getElementById('extracted-text').value = data.transcript;
             document.getElementById('extracted-wrap').classList.add('show');
+            const resBox = document.getElementById('res-audio');
+            const langNames = { en: 'English', hi: 'Hindi', te: 'Telugu' };
+            const langName = langNames[data.detected_language] || (data.detected_language || '').toUpperCase();
+            const isAI = data.voice_type === 'AI Generated';
+            const cls = isAI ? 'ai' : data.voice_type === 'Unknown' ? 'unknown' : 'human';
+            resBox.innerHTML = `
+                <div class="voice-badge ${cls}">${isAI ? '🤖 AI Generated Voice' : '👤 Human Voice'} — ${data.confidence}% confidence</div>
+                <div class="detected-lang">🌐 Detected Language: <strong>${langName}</strong></div>`;
+            resBox.classList.add('show');
         } catch (e) { showError('err-audio', e.message); }
         finally { btn.disabled = false; btn.textContent = '🔍 Extract Text from Audio'; }
     }
@@ -476,6 +513,16 @@
                 <div class="prob-chip safe">✅ Not Spam: ${data.probabilities['Not Spam']}%</div>
                 <div class="prob-chip spam">🚨 Spam: ${data.probabilities['Spam']}%</div>
             </div>`;
+        if (data.voice_type) {
+            const isAI = data.voice_type === 'AI Generated';
+            const cls = isAI ? 'ai' : data.voice_type === 'Unknown' ? 'unknown' : 'human';
+            html += `<div class="voice-badge ${cls}">${isAI ? '🤖 AI Generated Voice' : '👤 Human Voice'} — ${data.confidence}% confidence</div>`;
+        }
+        if (data.detected_language) {
+            const langNames = { en: 'English', hi: 'Hindi', te: 'Telugu' };
+            const langName = langNames[data.detected_language] || data.detected_language.toUpperCase();
+            html += `<div class="detected-lang">🌐 Detected Language: <strong>${langName}</strong></div>`;
+        }
         if (data.transcript) {
             html += `<div class="transcript-box"><strong>Transcript:</strong><br/>${data.transcript}</div>`;
         }
@@ -511,6 +558,7 @@
         try {
             const fd = new FormData();
             fd.append('file', fileInput.files[0]);
+            fd.append('language', document.getElementById('lang-select').value);
             const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.detail || 'Server error');
