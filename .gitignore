@@ -17,3 +17,14 @@ backend/uploads/
 
 # Environment variables
 .env
+
+# Audio files
+*.mp3
+*.wav
+*.m4a
+
+# Whisper cache
+.cache/
+
+# Model cache
+*.pt
