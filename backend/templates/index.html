@@ -1517,6 +1517,73 @@
             background: rgba(139, 92, 246, 0.2);
             border-radius: 6px;
         }
+
+        /* ─── Language Switcher ─── */
+        .lang-switcher {
+            position: relative;
+        }
+
+        .lang-switcher-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            color: var(--accent2);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .lang-switcher-btn:hover {
+            background: rgba(139, 92, 246, 0.22);
+            border-color: var(--accent);
+        }
+
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: rgba(20, 16, 50, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 200;
+            min-width: 140px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .lang-dropdown.open {
+            display: block;
+            animation: fadeInUp 0.18s ease;
+        }
+
+        .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            color: var(--text);
+        }
+
+        .lang-option:hover {
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .lang-option.active {
+            color: var(--accent2);
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -1532,22 +1599,22 @@
             <div class="sidebar-logo-text">SpamShield</div>
         </div>
         <ul class="nav-list">
-            <div class="nav-section">Main</div>
+            <div class="nav-section" data-i18n="nav_main">Main</div>
             <li class="nav-item active" data-page="page-dashboard">
-                <span class="nav-icon">📊</span> Dashboard
+                <span class="nav-icon">📊</span> <span data-i18n="nav_dashboard">Dashboard</span>
             </li>
-            <div class="nav-section">Info</div>
+            <div class="nav-section" data-i18n="nav_info">Info</div>
             <li class="nav-item" data-page="page-history">
-                <span class="nav-icon">📋</span> Recent Activity
+                <span class="nav-icon">📋</span> <span data-i18n="nav_history">Recent Activity</span>
             </li>
             <li class="nav-item" data-page="page-model">
-                <span class="nav-icon">🤖</span> Model Status
+                <span class="nav-icon">🤖</span> <span data-i18n="nav_model">Model Status</span>
             </li>
             <li class="nav-item" data-page="page-signals">
-                <span class="nav-icon">💡</span> Spam Signals
+                <span class="nav-icon">💡</span> <span data-i18n="nav_signals">Spam Signals</span>
             </li>
             <li class="nav-item" data-page="page-formats">
-                <span class="nav-icon">📁</span> Supported Formats
+                <span class="nav-icon">📁</span> <span data-i18n="nav_formats">Supported Formats</span>
             </li>
         </ul>
     </aside>
@@ -1557,9 +1624,18 @@
         <!-- Top Bar -->
         <div class="topbar">
             <div class="topbar-left">
-                <div class="topbar-title">Welcome back, User 👋</div>
+                <div class="topbar-title" data-i18n="welcome">Welcome back, User 👋</div>
             </div>
             <div class="topbar-right">
+                <div class="lang-switcher" id="lang-switcher">
+                    <button class="lang-switcher-btn" id="lang-switcher-btn" onclick="toggleLangDropdown()">🌐 <span
+                            id="lang-label">EN</span> ▾</button>
+                    <div class="lang-dropdown" id="lang-dropdown">
+                        <div class="lang-option active" onclick="setLanguage('en')">🇬🇧 English</div>
+                        <div class="lang-option" onclick="setLanguage('hi')">🇮🇳 हिंदी</div>
+                        <div class="lang-option" onclick="setLanguage('te')">🇮🇳 తెలుగు</div>
+                    </div>
+                </div>
                 <span class="theme-label" id="theme-label">🌙</span>
                 <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark"></div>
             </div>
@@ -1577,30 +1653,40 @@
                     <!-- Left: Input Section -->
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">🔬 Detection Input</div>
+                            <div class="card-title" data-i18n="detection_input">🔬 Detection Input</div>
                         </div>
                         <div class="card-body">
                             <div class="tabs">
-                                <button class="tab-btn active" data-tab="text" id="tab-text">📝 Text</button>
-                                <button class="tab-btn" data-tab="audio" id="tab-audio">🎙️ Upload</button>
-                                <button class="tab-btn" data-tab="record" id="tab-record">🔴 Live Record</button>
-                                <button class="tab-btn" data-tab="simulate" id="tab-simulate">📞 Call Sim</button>
+                                <button class="tab-btn active" data-tab="text" id="tab-text" data-i18n="tab_text">📝
+                                    Text</button>
+                                <button class="tab-btn" data-tab="audio" id="tab-audio" data-i18n="tab_upload">🎙️
+                                    Upload</button>
+                                <button class="tab-btn" data-tab="record" id="tab-record" data-i18n="tab_record">🔴 Live
+                                    Record</button>
+                                <button class="tab-btn" data-tab="simulate" id="tab-simulate"
+                                    data-i18n="tab_simulate">📞 Call Sim</button>
                             </div>
 
                             <!-- Text Tab -->
                             <div class="tab-content active" id="content-text">
                                 <div class="samples">
-                                    <button class="sample-chip" onclick="fillSample(0)">🏦 Bank OTP scam</button>
-                                    <button class="sample-chip" onclick="fillSample(1)">🎁 Prize winner</button>
-                                    <button class="sample-chip" onclick="fillSample(2)">💰 Loan offer</button>
-                                    <button class="sample-chip" onclick="fillSample(3)">📞 Normal call</button>
+                                    <button class="sample-chip" onclick="fillSample(0)" data-i18n="chip_bank">🏦 Bank
+                                        OTP scam</button>
+                                    <button class="sample-chip" onclick="fillSample(1)" data-i18n="chip_prize">🎁 Prize
+                                        winner</button>
+                                    <button class="sample-chip" onclick="fillSample(2)" data-i18n="chip_loan">💰 Loan
+                                        offer</button>
+                                    <button class="sample-chip" onclick="fillSample(3)" data-i18n="chip_normal">📞
+                                        Normal call</button>
                                 </div>
-                                <textarea id="input-text" placeholder="Paste the call transcript here..."></textarea>
+                                <textarea id="input-text" data-i18n-placeholder="placeholder_text"></textarea>
                                 <div class="suggestions-wrap" id="suggestions-wrap">
-                                    <div class="suggestions-title">⚠️ Spam Indicators Detected</div>
+                                    <div class="suggestions-title" data-i18n="spam_indicators">⚠️ Spam Indicators
+                                        Detected</div>
                                     <div id="suggestions-list"></div>
                                 </div>
-                                <button class="btn" id="btn-text" onclick="analyzeText()">⚡ Analyze Text</button>
+                                <button class="btn" id="btn-text" onclick="analyzeText()" data-i18n="btn_analyze_text">⚡
+                                    Analyze Text</button>
                                 <div class="error-msg" id="err-text"></div>
                             </div>
 
@@ -1614,10 +1700,10 @@
                                 </select>
                                 <div class="drop-zone" id="drop-zone">
                                     <div class="icon">📁</div>
-                                    <div>Drag & drop audio or <strong>click to browse</strong></div>
-                                    <div style="margin-top:.35rem; font-size:.75rem;">WAV, MP3, OGG, FLAC, M4A, WEBM —
-                                        max
-                                        50 MB</div>
+                                    <div data-i18n="drag_drop">Drag & drop audio or <strong>click to browse</strong>
+                                    </div>
+                                    <div style="margin-top:.35rem; font-size:.75rem;" data-i18n="format_info">WAV, MP3,
+                                        OGG, FLAC, M4A, WEBM — max 50 MB</div>
                                     <input type="file" id="audio-file" accept=".wav,.mp3,.ogg,.flac,.m4a,.webm" />
                                     <div class="file-name" id="file-name"></div>
                                 </div>
@@ -1625,12 +1711,13 @@
                                     <audio id="audio-player" controls></audio>
                                 </div>
                                 <button class="btn btn-outline" id="btn-extract" onclick="extractText()"
-                                    style="display:none;">🔍 Extract Text</button>
+                                    style="display:none;" data-i18n="btn_extract">🔍 Extract Text</button>
                                 <div class="extracted-wrap" id="extracted-wrap">
-                                    <div class="extracted-label">Extracted Transcript</div>
+                                    <div class="extracted-label" data-i18n="extracted_label">Extracted Transcript</div>
                                     <textarea class="extracted-text" id="extracted-text"></textarea>
                                 </div>
-                                <button class="btn" id="btn-audio" onclick="analyzeAudio()">⚡ Analyze Audio</button>
+                                <button class="btn" id="btn-audio" onclick="analyzeAudio()"
+                                    data-i18n="btn_analyze_audio">⚡ Analyze Audio</button>
                                 <div class="error-msg" id="err-audio"></div>
                             </div>
 
@@ -1642,13 +1729,14 @@
                                     </div>
                                     <div class="rec-timer" id="rec-timer">00:00</div>
                                     <button class="rec-btn" id="rec-btn" onclick="toggleRecording()">🎙️</button>
-                                    <div class="rec-status" id="rec-status">Click to start recording</div>
+                                    <div class="rec-status" id="rec-status" data-i18n="rec_status_idle">Click to start
+                                        recording</div>
                                 </div>
                                 <div class="audio-player-wrap" id="rec-player-wrap">
                                     <audio id="rec-player" controls></audio>
                                 </div>
-                                <button class="btn" id="btn-record" onclick="analyzeRecording()" style="display:none;">⚡
-                                    Analyze Recording</button>
+                                <button class="btn" id="btn-record" onclick="analyzeRecording()" style="display:none;"
+                                    data-i18n="btn_analyze_rec">⚡ Analyze Recording</button>
                                 <div class="error-msg" id="err-record"></div>
                             </div>
 
@@ -1672,14 +1760,16 @@
                                     style="padding: 1.25rem; border: 1px dashed var(--glass-border); border-radius: 12px; text-align: center; background: rgba(255,255,255,0.02); margin-bottom: 0.5rem;">
                                     <div id="sim-avatar" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📞</div>
                                     <div id="sim-title"
-                                        style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;">Inactive
+                                        style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;"
+                                        data-i18n="sim_inactive">Inactive
                                         Simulator</div>
                                     <div id="sim-desc"
-                                        style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">Choose a
+                                        style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;"
+                                        data-i18n="sim_desc">Choose a
                                         scenario above and call.</div>
                                     <button class="btn" id="btn-start-sim" onclick="startCallSimulation()"
-                                        style="margin-top: 0; width: auto; padding: 0.6rem 1.75rem; border-radius: 20px;">📞
-                                        Answer Mock Call</button>
+                                        style="margin-top: 0; width: auto; padding: 0.6rem 1.75rem; border-radius: 20px;"
+                                        data-i18n="sim_btn_answer">📞 Answer Mock Call</button>
                                 </div>
 
                                 <div id="sim-active-panel" style="display: none; flex-direction: column; gap: 0.75rem;">
@@ -1692,22 +1782,24 @@
                                             id="sim-duration">00:00</span>
                                     </div>
 
-                                    <div style="font-size: 0.75rem; color: var(--muted); font-weight:600;">Incoming Live
-                                        Transcript Stream:</div>
+                                    <div style="font-size: 0.75rem; color: var(--muted); font-weight:600;"
+                                        data-i18n="sim_live_transcript">Incoming Live Transcript Stream:</div>
                                     <div id="sim-transcript-stream"
                                         style="flex: 1; height: 110px; min-height: 110px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem; font-size: 0.85rem; line-height: 1.5; color: var(--text);">
                                     </div>
 
                                     <div class="suggestions-wrap show" id="sim-warnings-wrap"
                                         style="display: none; margin-top: 0.5rem;">
-                                        <div class="suggestions-title" style="font-size: 0.75rem;">⚠️ Real-time Spam
+                                        <div class="suggestions-title" style="font-size: 0.75rem;"
+                                            data-i18n="sim_spam_signals">⚠️ Real-time Spam
                                             Signals Flagged</div>
                                         <div id="sim-warnings-list"
                                             style="display:flex; flex-direction:column; gap:0.25rem;"></div>
                                     </div>
 
                                     <button class="btn" onclick="stopCallSimulation()"
-                                        style="margin-top: 0.5rem; background: linear-gradient(135deg, var(--red), #dc2626); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                                        style="margin-top: 0.5rem; background: linear-gradient(135deg, var(--red), #dc2626); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);"
+                                        data-i18n="sim_btn_hangup">
                                         🔴 Hang Up Call
                                     </button>
                                 </div>
@@ -1720,12 +1812,12 @@
                     <div class="right-col">
                         <div class="card">
                             <div class="card-header">
-                                <div class="card-title">📊 Analysis Result</div>
+                                <div class="card-title" data-i18n="analysis_result">📊 Analysis Result</div>
                             </div>
                             <div class="card-body">
                                 <div class="result-placeholder" id="result-placeholder">
                                     <div class="icon">🔮</div>
-                                    <div>Results will appear here after analysis</div>
+                                    <div data-i18n="result_placeholder">Results will appear here after analysis</div>
                                 </div>
                                 <div class="result" id="res-text"></div>
                                 <div class="result" id="res-audio"></div>
@@ -1747,13 +1839,14 @@
                     <div class="card-header">
                         <div class="history-header"
                             style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                            <div class="card-title">📋 Recent Activity</div>
-                            <button class="history-clear" onclick="clearHistory()">Clear All</button>
+                            <div class="card-title" data-i18n="nav_history">📋 Recent Activity</div>
+                            <button class="history-clear" onclick="clearHistory()" data-i18n="clear_all">Clear
+                                All</button>
                         </div>
                     </div>
                     <div class="card-body" style="overflow-y: auto;">
                         <div class="history-list" id="history-list">
-                            <div class="history-empty">No predictions yet</div>
+                            <div class="history-empty" data-i18n="no_pred">No predictions yet</div>
                         </div>
                     </div>
                 </div>
@@ -1763,9 +1856,9 @@
             <div class="page" id="page-model">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🤖 Model Status</div>
+                        <div class="card-title" data-i18n="nav_model">🤖 Model Status</div>
                         <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--green)">
-                            <div class="status-dot"></div> Live
+                            <div class="status-dot"></div> <span data-i18n="live">Live</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1894,6 +1987,87 @@
     </div><!-- end .main -->
 
     <script>
+        // ─── Translations & Language Switcher ───
+        const TRANSLATIONS = {
+            en: {
+                nav_main: "Main", nav_dashboard: "Dashboard", nav_info: "Info", nav_history: "Recent Activity", nav_model: "Model Status", nav_signals: "Spam Signals", nav_formats: "Supported Formats",
+                welcome: "Welcome back, User 👋", detection_input: "🔬 Detection Input", tab_text: "📝 Text", tab_upload: "🎙️ Upload", tab_record: "🔴 Live Record", tab_simulate: "📞 Call Sim",
+                chip_bank: "🏦 Bank OTP scam", chip_prize: "🎁 Prize winner", chip_loan: "💰 Loan offer", chip_normal: "📞 Normal call", placeholder_text: "Paste the call transcript here...",
+                spam_indicators: "⚠️ Spam Indicators Detected", btn_analyze_text: "⚡ Analyze Text",
+                drag_drop: "Drag & drop audio or <strong>click to browse</strong>", format_info: "WAV, MP3, OGG, FLAC, M4A, WEBM — max 50 MB", btn_extract: "🔍 Extract Text", extracted_label: "Extracted Transcript", btn_analyze_audio: "⚡ Analyze Audio",
+                rec_status_idle: "Click to start recording", btn_analyze_rec: "⚡ Analyze Recording",
+                sim_inactive: "Inactive Simulator", sim_desc: "Choose a scenario above and call.", sim_btn_answer: "📞 Answer Mock Call", sim_live_transcript: "Incoming Live Transcript Stream:", sim_spam_signals: "⚠️ Real-time Spam Signals Flagged", sim_btn_hangup: "🔴 Hang Up Call",
+                analysis_result: "📊 Analysis Result", result_placeholder: "Results will appear here after analysis",
+                clear_all: "Clear All", no_pred: "No predictions yet", live: "Live"
+            },
+            hi: {
+                nav_main: "मुख्य", nav_dashboard: "डैशबोर्ड", nav_info: "जानकारी", nav_history: "हाल की गतिविधि", nav_model: "मॉडल स्थिति", nav_signals: "स्पैम संकेत", nav_formats: "समर्थित प्रारूप",
+                welcome: "वापस स्वागत है, उपयोगकर्ता 👋", detection_input: "🔬 पहचान इनपुट", tab_text: "📝 पाठ (Text)", tab_upload: "🎙️ अपलोड", tab_record: "🔴 लाइव रिकॉर्ड", tab_simulate: "📞 कॉल सिम",
+                chip_bank: "🏦 बैंक OTP घोटाला", chip_prize: "🎁 पुरस्कार विजेता", chip_loan: "💰 ऋण प्रस्ताव", chip_normal: "📞 सामान्य कॉल", placeholder_text: "कॉल ट्रांसक्रिप्ट यहाँ चिपकाएँ...",
+                spam_indicators: "⚠️ स्पैम संकेतक पाए गए", btn_analyze_text: "⚡ पाठ विश्लेषण करें",
+                drag_drop: "ऑडियो खींचें या <strong>ब्राउज़ करने के लिए क्लिक करें</strong>", format_info: "WAV, MP3, OGG, FLAC, M4A, WEBM — अधिकतम 50 MB", btn_extract: "🔍 पाठ निकालें", extracted_label: "निकाला गया ट्रांसक्रिप्ट", btn_analyze_audio: "⚡ ऑडियो विश्लेषण करें",
+                rec_status_idle: "रिकॉर्डिंग शुरू करने के लिए क्लिक करें", btn_analyze_rec: "⚡ रिकॉर्डिंग विश्लेषण करें",
+                sim_inactive: "निष्क्रिय सिम्युलेटर", sim_desc: "ऊपर एक परिदृश्य चुनें और कॉल करें।", sim_btn_answer: "📞 मॉक कॉल का जवाब दें", sim_live_transcript: "लाइव ट्रांसक्रिप्ट स्ट्रीम:", sim_spam_signals: "⚠️ रीयल-टाइम स्पैम सिग्नल", sim_btn_hangup: "🔴 कॉल काटें",
+                analysis_result: "📊 विश्लेषण परिणाम", result_placeholder: "परिणाम विश्लेषण के बाद यहाँ दिखाई देंगे",
+                clear_all: "सब साफ़ करें", no_pred: "अब तक कोई भविष्यवाणी नहीं", live: "लाइव"
+            },
+            te: {
+                nav_main: "ప్రధాన", nav_dashboard: "డాష్‌బోర్డ్", nav_info: "సమాచారం", nav_history: "ఇటీవలి కార్యాచరణ", nav_model: "మోడల్ స్థితి", nav_signals: "స్పామ్ సూచనలు", nav_formats: "మద్దతు ఉన్న ఫార్మాట్‌లు",
+                welcome: "తిరిగి స్వాగతం, వినియోగదారు 👋", detection_input: "🔬 గుర్తింపు ఇన్‌పుట్", tab_text: "📝 వచనం", tab_upload: "🎙️ అప్‌లోడ్", tab_record: "🔴 లైవ్ రికార్డ్", tab_simulate: "📞 కాల్ సిమ్",
+                chip_bank: "🏦 బ్యాంక్ OTP స్కామ్", chip_prize: "🎁 బహుమతి విజేత", chip_loan: "💰 రుణ ఆఫర్", chip_normal: "📞 సాధారణ కాల్", placeholder_text: "కాల్ ట్రాన్స్‌క్రిప్ట్‌ను ఇక్కడ అతికించండి...",
+                spam_indicators: "⚠️ స్పామ్ సూచికలు కనుగొనబడ్డాయి", btn_analyze_text: "⚡ వచన విశ్లేషణ",
+                drag_drop: "ఆడియోను లాగండి లేదా <strong>బ్రౌజ్ చేయడానికి క్లిక్ చేయండి</strong>", format_info: "WAV, MP3, OGG, FLAC, M4A, WEBM — గరిష్టంగా 50 MB", btn_extract: "🔍 వచనాన్ని సంగ్రహించండి", extracted_label: "సంగ్రహించబడిన ట్రాన్స్‌క్రిప్ట్", btn_analyze_audio: "⚡ ఆడియో విశ్లేషణ",
+                rec_status_idle: "రికార్డింగ్ ప్రారంభించడానికి క్లిక్ చేయండి", btn_analyze_rec: "⚡ రికార్డింగ్ విశ్లేషణ",
+                sim_inactive: "క్రియారహిత సిమ్యులేటర్", sim_desc: "పైన ఒక దృష్టాంతాన్ని ఎంచుకుని కాల్ చేయండి.", sim_btn_answer: "📞 మాక్ కాల్‌కు సమాధానం ఇవ్వండి", sim_live_transcript: "లైవ్ ట్రాన్స్‌క్రిప్ట్ స్ట్రీమ్:", sim_spam_signals: "⚠️ రియల్-టైమ్ స్పామ్ సిగ్నల్స్", sim_btn_hangup: "🔴 కాల్ కట్ చేయండి",
+                analysis_result: "📊 విశ్లేషణ ఫలితం", result_placeholder: "విశ్లేషణ తర్వాత ఫలితాలు ఇక్కడ కనిపిస్తాయి",
+                clear_all: "అన్నీ క్లియర్ చేయండి", no_pred: "ఇంకా అంచనాలు లేవు", live: "లైవ్"
+            }
+        };
+
+        let currentLang = localStorage.getItem('spamshield_lang') || 'en';
+
+        function toggleLangDropdown() {
+            document.getElementById('lang-dropdown').classList.toggle('open');
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('spamshield_lang', lang);
+
+            document.getElementById('lang-label').textContent = lang.toUpperCase();
+
+            // Update active state in dropdown
+            document.querySelectorAll('.lang-option').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.lang-option[onclick="setLanguage('${lang}')"]`).classList.add('active');
+
+            // Close dropdown
+            document.getElementById('lang-dropdown').classList.remove('open');
+
+            // Apply translations to all data-i18n tags
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+                    el.innerHTML = TRANSLATIONS[lang][key]; // innerHTML allows formatting like <strong> in drag drop
+                }
+            });
+
+            // Apply translations to placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.dataset.i18nPlaceholder;
+                if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+                    el.placeholder = TRANSLATIONS[lang][key];
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#lang-switcher')) {
+                const dropdown = document.getElementById('lang-dropdown');
+                if (dropdown && dropdown.classList.contains('open')) dropdown.classList.remove('open');
+            }
+        });
+
         // Stats
         let stats = { total: 0, spam: 0, safe: 0 };
         const chartLabels = [], chartSpam = [], chartSafe = [];
@@ -2388,6 +2562,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
             selectSimScenario(0);
+            setLanguage(currentLang);
         });
 
         // --- Live Call Simulator ---
