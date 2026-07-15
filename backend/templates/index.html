@@ -2356,7 +2356,7 @@
             try {
                 const fd = new FormData();
                 fd.append('file', fileInput.files[0]);
-                fd.append('language', document.getElementById('lang-select').value);
+                fd.append('language', 'auto');
                 const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
                 const txt = await resp.text();
                 let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
