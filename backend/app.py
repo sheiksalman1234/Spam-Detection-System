@@ -9,7 +9,7 @@ if os.name == "nt":
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
@@ -281,18 +281,24 @@ def transcribe_audio(
 ):
     suffix = os.path.splitext(file.filename)[-1] or ".tmp"
     contents = file.file.read()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(contents)
-        tmp_path = tmp.name
+    if not contents:
+        return JSONResponse(status_code=400, content={"detail": "Uploaded file is empty."})
+    tmp_path = None
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
         lang_code = LANGUAGE_MAP.get(language)
         result = transcribe(tmp_path, lang_code)
         if not result["transcript"]:
-            raise HTTPException(status_code=422, detail="Could not transcribe audio")
+            return JSONResponse(status_code=422, content={"detail": "Could not transcribe audio. Make sure the audio has speech."})
         voice_info = detect_ai_voice(tmp_path, transcript=result["transcript"])
         return {**result, **voice_info}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Transcription failed: {str(e)}"})
     finally:
-        os.unlink(tmp_path)
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 @app.post("/predict/audio")
@@ -302,19 +308,25 @@ def predict_audio(
 ):
     suffix = os.path.splitext(file.filename)[-1] or ".tmp"
     contents = file.file.read()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(contents)
-        tmp_path = tmp.name
+    if not contents:
+        return JSONResponse(status_code=400, content={"detail": "Uploaded file is empty."})
+    tmp_path = None
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
         lang_code = LANGUAGE_MAP.get(language)
         trans_result = transcribe(tmp_path, lang_code)
         if not trans_result["transcript"]:
-            raise HTTPException(status_code=422, detail="Could not transcribe audio")
+            return JSONResponse(status_code=422, content={"detail": "Could not transcribe audio. Make sure the audio has speech."})
         voice_info = detect_ai_voice(tmp_path, transcript=trans_result["transcript"])
         response = classify(trans_result["transcript"])
         response["transcript"] = trans_result["transcript"]
         response["detected_language"] = trans_result["detected_language"]
         response.update(voice_info)
         return response
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Audio analysis failed: {str(e)}"})
     finally:
-        os.unlink(tmp_path)
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
