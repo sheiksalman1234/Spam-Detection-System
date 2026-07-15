@@ -7,7 +7,7 @@
     <title>SpamShield AI — Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
         *,
         *::before,
@@ -1663,8 +1663,6 @@
                                     Upload</button>
                                 <button class="tab-btn" data-tab="record" id="tab-record" data-i18n="tab_record">🔴 Live
                                     Record</button>
-                                <button class="tab-btn" data-tab="simulate" id="tab-simulate"
-                                    data-i18n="tab_simulate">📞 Call Sim</button>
                             </div>
 
                             <!-- Text Tab -->
@@ -1740,71 +1738,7 @@
                                 <div class="error-msg" id="err-record"></div>
                             </div>
 
-                            <!-- Live Call Simulator Tab -->
-                            <div class="tab-content" id="content-simulate">
-                                <div class="samples" style="margin-bottom: 0.75rem;">
-                                    <span
-                                        style="font-size: 0.78rem; font-weight: 600; color: var(--muted); align-self: center; margin-right: 0.5rem;">Select
-                                        Scenario:</span>
-                                    <button class="sample-chip" onclick="selectSimScenario(0)">🏦 Bank Security
-                                        (OTP)</button>
-                                    <button class="sample-chip" onclick="selectSimScenario(1)">🏛️ Court Warrant
-                                        (Threat)</button>
-                                    <button class="sample-chip" onclick="selectSimScenario(2)">🎁 Mega Lottery
-                                        (Bait)</button>
-                                    <button class="sample-chip" onclick="selectSimScenario(3)">📦 Courier Delivery
-                                        (Safe)</button>
-                                </div>
 
-                                <div id="sim-control-panel"
-                                    style="padding: 1.25rem; border: 1px dashed var(--glass-border); border-radius: 12px; text-align: center; background: rgba(255,255,255,0.02); margin-bottom: 0.5rem;">
-                                    <div id="sim-avatar" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📞</div>
-                                    <div id="sim-title"
-                                        style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;"
-                                        data-i18n="sim_inactive">Inactive
-                                        Simulator</div>
-                                    <div id="sim-desc"
-                                        style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;"
-                                        data-i18n="sim_desc">Choose a
-                                        scenario above and call.</div>
-                                    <button class="btn" id="btn-start-sim" onclick="startCallSimulation()"
-                                        style="margin-top: 0; width: auto; padding: 0.6rem 1.75rem; border-radius: 20px;"
-                                        data-i18n="sim_btn_answer">📞 Answer Mock Call</button>
-                                </div>
-
-                                <div id="sim-active-panel" style="display: none; flex-direction: column; gap: 0.75rem;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.3); border-radius: 10px;"
-                                        id="sim-status-banner">
-                                        <span style="font-size: 0.78rem; font-weight: 600; color: var(--orange);"
-                                            id="sim-caller-label">Caller: Bank OTP Department</span>
-                                        <span
-                                            style="font-variant-numeric: tabular-nums; font-size: 0.8rem; font-weight: 700;"
-                                            id="sim-duration">00:00</span>
-                                    </div>
-
-                                    <div style="font-size: 0.75rem; color: var(--muted); font-weight:600;"
-                                        data-i18n="sim_live_transcript">Incoming Live Transcript Stream:</div>
-                                    <div id="sim-transcript-stream"
-                                        style="flex: 1; height: 110px; min-height: 110px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem; font-size: 0.85rem; line-height: 1.5; color: var(--text);">
-                                    </div>
-
-                                    <div class="suggestions-wrap show" id="sim-warnings-wrap"
-                                        style="display: none; margin-top: 0.5rem;">
-                                        <div class="suggestions-title" style="font-size: 0.75rem;"
-                                            data-i18n="sim_spam_signals">⚠️ Real-time Spam
-                                            Signals Flagged</div>
-                                        <div id="sim-warnings-list"
-                                            style="display:flex; flex-direction:column; gap:0.25rem;"></div>
-                                    </div>
-
-                                    <button class="btn" onclick="stopCallSimulation()"
-                                        style="margin-top: 0.5rem; background: linear-gradient(135deg, var(--red), #dc2626); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);"
-                                        data-i18n="sim_btn_hangup">
-                                        🔴 Hang Up Call
-                                    </button>
-                                </div>
-                                <div class="error-msg" id="err-sim"></div>
-                            </div>
                         </div>
                     </div>
 
@@ -1822,7 +1756,6 @@
                                 <div class="result" id="res-text"></div>
                                 <div class="result" id="res-audio"></div>
                                 <div class="result" id="res-record"></div>
-                                <div class="result" id="res-simulate"></div>
                             </div>
                         </div>
 
@@ -2134,7 +2067,7 @@
                 document.getElementById('content-' + btn.dataset.tab).classList.add('active');
 
                 // Switch corresponding result view
-                const tabsList = ['text', 'audio', 'record', 'simulate'];
+                const tabsList = ['text', 'audio', 'record'];
                 tabsList.forEach(t => {
                     const res = document.getElementById('res-' + t);
                     if (res) res.classList.remove('show');
@@ -2263,47 +2196,13 @@
             stats.total++;
             if (isSpam) stats.spam++; else stats.safe++;
             showAlert(isSpam);
-
-            if (isSpam && text) {
-                trackKeywords(text);
-            }
-
-            if (chartInstance) {
-                chartInstance.data.datasets[0].data = [stats.safe, stats.spam];
-                chartInstance.update();
-            }
-        }
-
-        function trackKeywords(text) {
-            if (!text) return;
-            const textLower = text.toLowerCase();
-            SPAM_KW.forEach(kw => {
-                if (textLower.includes(kw)) {
-                    flaggedKeywords[kw] = (flaggedKeywords[kw] || 0) + 1;
-                }
-            });
-            renderKeywordCloud();
-        }
-
-        function renderKeywordCloud() {
-            const container = document.getElementById('keyword-cloud');
-            const keys = Object.keys(flaggedKeywords);
-            if (keys.length === 0) {
-                container.innerHTML = `<span style="font-size: 0.75rem; color: var(--muted);">No spam keywords flagged yet.</span>`;
-                return;
-            }
-            container.innerHTML = keys.map(k => {
-                const count = flaggedKeywords[k];
-                const fontSize = Math.min(1.2, 0.75 + (count * 0.1));
-                return `<span class="sample-chip" style="font-size: ${fontSize}rem; cursor: default; margin: 0; background: rgba(239, 68, 68, 0.1); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2)">${k} (${count})</span>`;
-            }).join('');
         }
 
         function renderResult(container, data) {
             currentAnalysisResult = data;
             const isSpam = data.label === 'Spam';
             document.getElementById('result-placeholder').style.display = 'none';
-            ['res-text', 'res-audio', 'res-record', 'res-simulate'].forEach(i => { if (i !== container.id) document.getElementById(i).classList.remove('show'); });
+            ['res-text', 'res-audio', 'res-record'].forEach(i => { if (i !== container.id) document.getElementById(i).classList.remove('show'); });
 
             let html = `
             <div class="result-header">
@@ -2564,8 +2463,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            selectSimScenario(0);
             setLanguage(currentLang);
         });
 
