@@ -2218,7 +2218,8 @@
                 fd.append('file', fileInput.files[0]);
                 fd.append('language', document.getElementById('lang-select').value);
                 const resp = await fetch('/transcribe', { method: 'POST', body: fd });
-                const data = await resp.json();
+                const txt = await resp.text();
+                let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Failed');
                 document.getElementById('extracted-text').value = data.transcript;
                 document.getElementById('extracted-wrap').classList.add('show');
@@ -2439,7 +2440,8 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
                 });
-                const data = await resp.json();
+                const txt = await resp.text();
+                let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
                 renderResult(document.getElementById('res-text'), data);
                 addHistory(text, data);
@@ -2457,7 +2459,8 @@
                 fd.append('file', fileInput.files[0]);
                 fd.append('language', document.getElementById('lang-select').value);
                 const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
-                const data = await resp.json();
+                const txt = await resp.text();
+                let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
                 renderResult(document.getElementById('res-audio'), data);
                 addHistory(data.transcript || fileInput.files[0].name, data);
@@ -2520,7 +2523,8 @@
                 fd.append('file', new File([recBlob], 'recording.webm', { type: 'audio/webm' }));
                 fd.append('language', 'auto');
                 const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
-                const data = await resp.json();
+                const txt = await resp.text();
+                let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
                 renderResult(document.getElementById('res-record'), data);
                 addHistory(data.transcript || 'Live Recording', data);
