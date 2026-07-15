@@ -74,7 +74,7 @@ def classify(text: str) -> dict:
     }
 
 
-def detect_ai_voice(audio_path: str) -> dict:
+def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
     try:
         y, sr = librosa.load(audio_path, sr=16000, mono=True)
 
@@ -107,26 +107,26 @@ def detect_ai_voice(audio_path: str) -> dict:
 
         ai_score = 0
 
-        # Low pitch variance = AI (human speech varies naturally)
-        if pitch_std < 15:
-            ai_score += 25
-        elif pitch_std < 30:
-            ai_score += 10
+        # Low pitch variance = AI
+        if pitch_std < 20:
+            ai_score += 30
+        elif pitch_std < 35:
+            ai_score += 15
 
         # Low spectral flatness std = AI (too consistent)
-        if flatness_std < 0.02:
+        if flatness_std < 0.025:
             ai_score += 20
         elif flatness_std < 0.04:
             ai_score += 10
 
         # Low rolloff std = AI
-        if rolloff_std < 300:
+        if rolloff_std < 350:
             ai_score += 15
         elif rolloff_std < 600:
-            ai_score += 7
+            ai_score += 5
 
         # Low MFCC delta = AI (not enough natural variation)
-        if mfcc_delta_mean < 1.5:
+        if mfcc_delta_mean < 1.8:
             ai_score += 20
         elif mfcc_delta_mean < 3.0:
             ai_score += 10
@@ -136,19 +136,53 @@ def detect_ai_voice(audio_path: str) -> dict:
             ai_score += 10
 
         # Very regular beat = AI
-        if beat_regularity < 2:
+        if beat_regularity < 2.0:
             ai_score += 10
 
-        is_ai = ai_score >= 55
-        confidence = min(ai_score + 10, 99) if is_ai else min((100 - ai_score) + 10, 99)
+        # Grammar & Fluency Heuristics
+        if transcript:
+            text_lower = transcript.lower()
+            # Lack of filler words (perfect fluency is robotic)
+            fillers = [" uh", " um", " like ", " you know", " ah", " hmm"]
+            filler_count = sum(text_lower.count(f) for f in fillers)
+            
+            if filler_count == 0:
+                ai_score += 10  # Reduced: Whisper often cleans transcripts, so lack of fillers shouldn't be overly penalized
+            else:
+                ai_score -= 20 * filler_count  # Heavily reward hesitations as human
+            
+            # Stammering / Repetition detection (e.g., "the the", "I I") typical in human grammar errors
+            words = text_lower.split()
+            stammer_count = sum(1 for i in range(len(words) - 1) if words[i] == words[i+1] and len(words[i]) > 0)
+            if stammer_count > 0:
+                ai_score -= 30 * stammer_count  # Repeated words are very human
+
+            # Extremely formal phrasing typical of automated robocalls
+            formal_phrases = ["hello", "sir", "madam", "dear customer", "urgent call", "has been suspended", "press 1", "press one", "account"]
+            for phrase in formal_phrases:
+                if phrase in text_lower:
+                    ai_score += 5
+
+        is_ai = ai_score >= 50
+        
+        # Calculate bound percentages
+        ai_prob = max(0, min(100, int(ai_score * 1.5)))  # Scale so 50+ is strong AI
+        if is_ai:
+            ai_prob = max(51, ai_prob)
+        else:
+            ai_prob = min(49, ai_prob)
+            
+        human_prob = 100 - ai_prob
 
         return {
             "voice_type": "AI Generated" if is_ai else "Human",
             "ai_score": ai_score,
-            "confidence": confidence
+            "ai_prob": ai_prob,
+            "human_prob": human_prob,
+            "voice_confidence": max(ai_prob, human_prob)
         }
     except Exception as e:
-        return {"voice_type": "Unknown", "ai_score": 0, "confidence": 0}
+        return {"voice_type": "Unknown", "ai_score": 0, "ai_prob": 0, "human_prob": 0, "voice_confidence": 0}
 
 
 def transcribe(audio_path: str, language: str = None) -> dict:
@@ -224,7 +258,7 @@ async def transcribe_audio(
         result = transcribe(tmp_path, lang_code)
         if not result["transcript"]:
             raise HTTPException(status_code=422, detail="Could not transcribe audio")
-        voice_info = detect_ai_voice(tmp_path)
+        voice_info = detect_ai_voice(tmp_path, transcript=result["transcript"])
         return {**result, **voice_info}
     finally:
         os.unlink(tmp_path)
@@ -244,7 +278,7 @@ async def predict_audio(
         trans_result = transcribe(tmp_path, lang_code)
         if not trans_result["transcript"]:
             raise HTTPException(status_code=422, detail="Could not transcribe audio")
-        voice_info = detect_ai_voice(tmp_path)
+        voice_info = detect_ai_voice(tmp_path, transcript=trans_result["transcript"])
         response = classify(trans_result["transcript"])
         response["transcript"] = trans_result["transcript"]
         response["detected_language"] = trans_result["detected_language"]

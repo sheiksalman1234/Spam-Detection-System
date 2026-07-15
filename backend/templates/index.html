@@ -1,573 +1,2118 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spam Call Detector</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>SpamShield AI — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
-            --bg: #0b0f19; --surface: #131825; --card: #1a2035;
-            --border: #252d44; --text: #e4e8f1; --muted: #8892a8;
-            --accent: #6366f1; --accent2: #818cf8;
-            --green: #22c55e; --red: #ef4444; --orange: #f97316;
-            --glow: rgba(99,102,241,.35); --radius: 14px;
-        }
-        body.light {
-            --bg: #f1f5f9; --surface: #ffffff; --card: #f8fafc;
-            --border: #cbd5e1; --text: #1e293b; --muted: #64748b;
-            --glow: rgba(99,102,241,.2);
-        }
-        body.light::before {
-            background:
-                radial-gradient(ellipse 80% 60% at 50% -20%, rgba(99,102,241,.08), transparent),
-                radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139,92,246,.06), transparent);
+            --sidebar-bg: rgba(15, 10, 40, 0.75);
+            --bg: #0a0818;
+            --surface: rgba(26, 24, 48, 0.6);
+            --card: rgba(255, 255, 255, 0.04);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --input-bg: rgba(15, 14, 26, 0.6);
+            --text: #f0eeff;
+            --muted: #8b85a8;
+            --accent: #8b5cf6;
+            --accent2: #a78bfa;
+            --orange: #ff6b35;
+            --pink: #ec4899;
+            --green: #10b981;
+            --red: #ef4444;
+            --cyan: #06b6d4;
+            --radius: 16px;
+            --sidebar-w: 240px;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg); color: var(--text);
-            min-height: 100vh; display: flex;
-            flex-direction: column; align-items: center; overflow-x: hidden;
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            display: flex;
+            overflow-x: hidden;
         }
+
         body::before {
-            content: ''; position: fixed; inset: 0;
+            content: '';
+            position: fixed;
+            inset: 0;
             background:
-                radial-gradient(ellipse 80% 60% at 50% -20%, rgba(99,102,241,.15), transparent),
-                radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139,92,246,.1), transparent);
-            pointer-events: none; z-index: 0;
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(139, 92, 246, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(236, 72, 153, 0.14) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 60% 30%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .theme-toggle {
-            position: fixed; top: 1rem; right: 1rem; z-index: 100;
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 50%; width: 40px; height: 40px;
-            font-size: 1.1rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: all .2s;
-        }
-        .theme-toggle:hover { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
-
-        header {
-            width: 100%; text-align: center;
-            padding: 3rem 1rem 1rem; position: relative; z-index: 1;
-        }
-        header h1 {
-            font-size: 2.5rem; font-weight: 800;
-            background: linear-gradient(135deg, var(--accent2), #a78bfa, var(--accent));
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent; color: transparent;
-            letter-spacing: 0px;
-        }
-        header p { color: var(--muted); margin-top: .4rem; font-size: .95rem; }
-
-        .container {
-            width: 100%; max-width: 720px;
-            padding: 0 1rem 4rem; position: relative; z-index: 1;
+        body>* {
+            position: relative;
+            z-index: 1;
         }
 
-        .tabs { display: flex; gap: .5rem; margin: 2rem 0 1.2rem; }
-        .tab-btn {
-            flex: 1; padding: .75rem;
-            background: var(--card); color: var(--muted);
-            border: 1px solid var(--border); border-radius: var(--radius);
-            font-weight: 600; cursor: pointer; transition: all .25s;
-        }
-        .tab-btn.active, .tab-btn:hover {
-            background: var(--accent); color: #fff;
-            border-color: var(--accent); box-shadow: 0 4px 24px var(--glow);
+        /* ─── Sidebar ─── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 50;
+            border-right: 1px solid var(--glass-border);
         }
 
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.5rem 0.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .sidebar-logo-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #c4b5fd, #f0abfc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-list {
+            list-style: none;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 0.85rem;
+            border-radius: 12px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .nav-item.active {
+            color: #fff;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .nav-item .nav-icon {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--orange);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        /* ─── Main Content ─── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Top Bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: var(--surface);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            box-shadow: 0 1px 0 var(--card-border);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .topbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .topbar-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--surface);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.5rem 0.85rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+            min-width: 220px;
+        }
+
+        .topbar-search input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        .topbar-search input::placeholder {
+            color: var(--muted);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .topbar-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--surface);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .topbar-icon:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .topbar-icon .dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 7px;
+            height: 7px;
+            background: var(--orange);
+            border-radius: 50%;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 1.5rem 2rem 2rem;
+        }
+
+        /* Welcome */
+        .welcome {
+            margin-bottom: 1.75rem;
+        }
+
+        .welcome h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .welcome p {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        /* ─── Stat Cards ─── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translate(20%, -20%);
+        }
+
+        .stat-card:nth-child(1) {
+            background: linear-gradient(135deg, #ff6b35, #ff3d7f);
+        }
+
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        }
+
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+        }
+
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+        }
+
+        .stat-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-top: 0.2rem;
+            font-weight: 500;
+        }
+
+        .stat-change {
+            position: absolute;
+            top: 0.85rem;
+            right: 0.85rem;
+            font-size: 0.6rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 6px;
+            color: #fff;
+        }
+
+        /* ─── Dashboard Grid ─── */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        .dashboard>.card {
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+            height: calc(100vh - 120px);
+        }
+
+        .dashboard>.card>.card-body {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-height: 500px;
+            height: calc(100vh - 120px);
+        }
+
+        .right-col>.card {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .right-col>.card>.card-body {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+
+        /* ─── Pages ─── */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .nav-section {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0.5rem 0.85rem 0.35rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Cards */
         .card {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 2rem;
-            display: none; animation: fadeUp .35s ease;
-        }
-        .card.active { display: block; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
-        /* Sample chips */
-        .samples { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+        .card:hover {
+            border-color: rgba(139, 92, 246, 0.2);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        /* ─── Tabs ─── */
+        .tabs {
+            display: flex;
+            gap: 0.35rem;
+            padding: 0.3rem;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.25s;
+            font-family: inherit;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        /* ─── Form Elements ─── */
+        textarea,
+        .extracted-text {
+            width: 100%;
+            flex: 1;
+            min-height: 120px;
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.9rem;
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            backdrop-filter: blur(8px);
+        }
+
+        textarea:focus,
+        .extracted-text:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12), 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        /* Samples */
+        .samples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
         .sample-chip {
-            padding: .35rem .75rem; font-size: .78rem;
-            background: var(--surface); color: var(--accent2);
-            border: 1px solid var(--border); border-radius: 20px;
-            cursor: pointer; transition: all .2s;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent2);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-family: inherit;
         }
-        .sample-chip:hover { background: rgba(99,102,241,.15); border-color: var(--accent); }
 
-        textarea {
-            width: 100%; min-height: 140px;
-            background: var(--surface); color: var(--text);
-            border: 1px solid var(--border); border-radius: 10px;
-            padding: 1rem; font-size: .95rem;
-            resize: vertical; font-family: inherit; transition: border-color .2s;
+        .sample-chip:hover {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateY(-1px);
         }
-        textarea:focus { outline: none; border-color: var(--accent); }
 
         /* Suggestions */
-        .suggestions-wrap { margin-top: .8rem; display: none; }
-        .suggestions-wrap.show { display: block; }
-        .suggestions-title { font-size: .78rem; color: var(--orange); font-weight: 600; margin-bottom: .4rem; }
+        .suggestions-wrap {
+            margin-top: 0.75rem;
+            display: none;
+        }
+
+        .suggestions-wrap.show {
+            display: block;
+        }
+
+        .suggestions-title {
+            font-size: 0.75rem;
+            color: var(--orange);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
         .suggestion-item {
-            display: flex; align-items: flex-start; gap: .5rem;
-            padding: .45rem .7rem; margin-bottom: .35rem;
-            background: rgba(249,115,22,.08);
-            border: 1px solid rgba(249,115,22,.25);
-            border-radius: 8px; font-size: .82rem; color: var(--text);
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.35rem;
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 3px solid var(--orange);
+            border-radius: 8px;
+            font-size: 0.8rem;
         }
-        .suggestion-item:last-child { margin-bottom: 0; }
 
-        /* Drop zone */
+        /* Drop Zone */
         .drop-zone {
-            border: 2px dashed var(--border); border-radius: 12px;
-            padding: 2.5rem 1.5rem; text-align: center;
-            cursor: pointer; transition: all .25s; color: var(--muted);
+            border: 2px dashed rgba(139, 92, 246, 0.3);
+            border-radius: 14px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            color: var(--muted);
+            background: var(--card);
+            backdrop-filter: blur(8px);
         }
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--accent); background: rgba(99,102,241,.06);
-        }
-        .drop-zone .icon { font-size: 2.2rem; margin-bottom: .5rem; }
-        .drop-zone input[type="file"] { display: none; }
-        .file-name { margin-top: .8rem; font-size: .85rem; color: var(--accent2); word-break: break-all; }
 
-        /* Language selector */
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, 0.07);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.12), inset 0 0 20px rgba(139, 92, 246, 0.04);
+        }
+
+        .drop-zone .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-name {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--accent2);
+        }
+
+        /* Lang Select */
         .lang-select {
-            width: 100%; padding: .65rem .9rem;
-            background: var(--surface); color: var(--text);
-            border: 1px solid var(--border); border-radius: 10px;
-            font-size: .9rem; font-family: inherit;
-            margin-bottom: .8rem; cursor: pointer;
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            font-family: inherit;
         }
-        .lang-select:focus { outline: none; border-color: var(--accent); }
 
-        /* Voice type badge */
-        .voice-badge {
-            display: inline-flex; align-items: center; gap: .4rem;
-            padding: .4rem .9rem; border-radius: 20px;
-            font-size: .82rem; font-weight: 700; margin-top: .8rem;
+        .lang-select:focus {
+            outline: none;
+            border-color: var(--accent);
         }
-        .voice-badge.human { background: rgba(34,197,94,.15); color: var(--green); }
-        .voice-badge.ai    { background: rgba(239,68,68,.15); color: var(--red); }
-        .voice-badge.unknown { background: rgba(136,146,168,.15); color: var(--muted); }
-        .detected-lang { font-size: .78rem; color: var(--muted); margin-top: .4rem; }
 
-        /* Audio player */
-        .audio-player-wrap { margin-top: 1rem; display: none; }
-        .audio-player-wrap.show { display: block; }
-        .audio-player-wrap audio { width: 100%; border-radius: 10px; accent-color: var(--accent); }
+        /* Audio Player */
+        .audio-player-wrap {
+            margin-top: 1rem;
+            display: none;
+        }
 
-        /* Extracted text */
-        .extracted-wrap { margin-top: 1rem; display: none; }
-        .extracted-wrap.show { display: block; }
-        .extracted-label { font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
-        .extracted-text {
-            width: 100%; min-height: 80px;
-            background: var(--surface); color: var(--text);
-            border: 1px solid var(--border); border-radius: 10px;
-            padding: .8rem; font-size: .9rem; resize: vertical; font-family: inherit;
+        .audio-player-wrap.show {
+            display: block;
+        }
+
+        .audio-player-wrap audio {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Extracted */
+        .extracted-wrap {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .extracted-wrap.show {
+            display: block;
+        }
+
+        .extracted-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+
+        /* ─── Buttons ─── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s;
+            gap: 0.5rem;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .btn-outline {
-            display: inline-flex; align-items: center; justify-content: center;
-            margin-top: .8rem; width: 100%; padding: .7rem;
-            background: transparent; color: var(--accent2); font-weight: 600; font-size: .9rem;
-            border: 1px solid var(--accent); border-radius: 10px; cursor: pointer; transition: all .2s;
+            background: transparent;
+            color: var(--accent2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: none;
         }
-        .btn-outline:hover { background: rgba(99,102,241,.1); }
-        .btn-outline:disabled { opacity: .4; cursor: not-allowed; }
 
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            margin-top: 1.2rem; width: 100%; padding: .85rem;
-            background: linear-gradient(135deg, var(--accent), #7c3aed);
-            color: #fff; font-weight: 700; font-size: 1rem;
-            border: none; border-radius: 10px; cursor: pointer;
-            transition: transform .15s, box-shadow .25s;
+        .btn-outline:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.15);
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--glow); }
-        .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
-        .btn .spinner {
-            width: 20px; height: 20px;
-            border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
-            border-radius: 50%; animation: spin .6s linear infinite; margin-right: .6rem;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Result */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .tip-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.85rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            font-size: 0.8rem;
+            color: var(--muted);
+            transition: all 0.2s;
+        }
+
+        .tip-item:hover {
+            background: rgba(139, 92, 246, 0.06);
+            border-color: rgba(139, 92, 246, 0.2);
+            color: var(--text);
+        }
+
+        .tip-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.82rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse-dot 2s infinite;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .model-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.8rem;
+        }
+
+        .model-stat:last-child {
+            border-bottom: none;
+        }
+
+        .model-stat-label {
+            color: var(--muted);
+        }
+
+        .model-stat-val {
+            font-weight: 600;
+            color: var(--accent2);
+        }
+
+        /* ─── Result ─── */
+        .result-placeholder {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+
+        .result-placeholder .icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.3;
+        }
+
         .result {
-            margin-top: 1.5rem; border-radius: var(--radius);
-            padding: 1.6rem 1.8rem; background: var(--surface);
-            border: 1px solid var(--border); display: none; animation: fadeUp .3s ease;
+            display: none;
         }
-        .result.show { display: block; }
-        .result-label { font-size: 1.6rem; font-weight: 800; display: flex; align-items: center; gap: .6rem; }
-        .result-label.spam  { color: var(--red); }
-        .result-label.nospan { color: var(--green); }
-        .confidence-bar-wrap { margin-top: 1rem; background: var(--card); border-radius: 8px; height: 10px; overflow: hidden; }
-        .confidence-bar { height: 100%; border-radius: 8px; transition: width .6s cubic-bezier(.22,1,.36,1); }
-        .confidence-text { margin-top: .5rem; font-size: .85rem; color: var(--muted); }
-        .transcript-box {
-            margin-top: 1rem; padding: 1rem;
-            background: var(--card); border-radius: 10px;
-            font-size: .88rem; color: var(--muted); line-height: 1.6;
-        }
-        .transcript-box strong { color: var(--text); }
-        .probs { margin-top: 1rem; display: flex; gap: 1rem; }
-        .prob-chip { flex: 1; padding: .65rem .8rem; border-radius: 10px; text-align: center; font-weight: 600; font-size: .88rem; }
-        .prob-chip.spam { background: rgba(239,68,68,.12); color: var(--red); }
-        .prob-chip.safe { background: rgba(34,197,94,.12); color: var(--green); }
 
-        /* History */
-        .history-wrap {
-            margin-top: 2rem; background: var(--card);
-            border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem 1.5rem;
+        .result.show {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
         }
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; }
-        .history-header span { font-weight: 700; font-size: .95rem; }
-        .history-clear { font-size: .75rem; color: var(--muted); background: none; border: none; cursor: pointer; transition: color .2s; }
-        .history-clear:hover { color: var(--red); }
-        .history-empty { color: var(--muted); font-size: .85rem; text-align: center; padding: .5rem 0; }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .result-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            font-size: 2rem;
+            animation: resultPop 0.4s ease;
+        }
+
+        @keyframes resultPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            60% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .result-icon.spam {
+            background: rgba(239, 68, 68, 0.15);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.15);
+        }
+
+        .result-icon.safe {
+            background: rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
+        }
+
+        .result-label {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .result-label.spam {
+            color: var(--red);
+        }
+
+        .result-label.safe {
+            color: var(--green);
+        }
+
+        .confidence-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .confidence-text {
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .probs {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .prob-item {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .prob-item.safe {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .prob-item.spam {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .prob-item .value {
+            font-weight: 700;
+            font-size: 1.15rem;
+            display: block;
+        }
+
+        .voice-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
+        }
+
+        .voice-badge.human {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        .voice-badge.ai {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .transcript-box {
+            margin-top: 1rem;
+            padding: 0.85rem;
+            background: var(--input-bg);
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            font-size: 0.8rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* ─── History ─── */
+        .history-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 4px;
+        }
+
         .history-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: .65rem .8rem; border-radius: 8px;
-            background: var(--surface); margin-bottom: .5rem; font-size: .83rem; gap: .8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 0.85rem;
+            border-radius: 10px;
+            background: var(--input-bg);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
         }
-        .history-item:last-child { margin-bottom: 0; }
-        .history-text { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .history-badge { font-weight: 700; font-size: .78rem; padding: .2rem .6rem; border-radius: 20px; white-space: nowrap; }
-        .history-badge.spam { background: rgba(239,68,68,.15); color: var(--red); }
-        .history-badge.safe { background: rgba(34,197,94,.15); color: var(--green); }
-        .history-conf { color: var(--muted); font-size: .75rem; white-space: nowrap; }
+
+        .history-item:hover {
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .history-item.spam-border {
+            border-left-color: var(--red);
+        }
+
+        .history-item.safe-border {
+            border-left-color: var(--green);
+        }
+
+        .history-text {
+            flex: 1;
+            color: var(--muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-badge {
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+        }
+
+        .history-badge.spam {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--red);
+        }
+
+        .history-badge.safe {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-clear {
+            font-size: 0.75rem;
+            color: var(--muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.2s;
+        }
+
+        .history-clear:hover {
+            color: var(--red);
+        }
 
         /* Error */
         .error-msg {
-            margin-top: 1rem; padding: 1rem;
-            background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
-            border-radius: 10px; color: var(--red); font-size: .9rem; display: none;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--red);
+            border-radius: 8px;
+            color: var(--red);
+            font-size: 0.85rem;
+            display: none;
         }
-        .error-msg.show { display: block; }
 
-        footer {
-            margin-top: auto; padding: 1.5rem;
-            text-align: center; color: var(--muted); font-size: .78rem; position: relative; z-index: 1;
+        .error-msg.show {
+            display: block;
+        }
+
+        /* ─── Light Mode ─── */
+        body.light {
+            --bg: #f0eeff;
+            --surface: rgba(255, 255, 255, 0.8);
+            --card: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(139, 92, 246, 0.15);
+            --input-bg: rgba(235, 235, 245, 0.9);
+            --text: #1a1035;
+            --muted: #6b6890;
+            --glass: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(139, 92, 246, 0.2);
+            --sidebar-bg: rgba(240, 235, 255, 0.9);
+        }
+
+        body.light::before {
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 55%);
+        }
+
+        /* ─── Theme Toggle ─── */
+        .theme-toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body.light .theme-toggle {
+            background: rgba(139, 92, 246, 0.6);
+        }
+
+        body.light .theme-toggle::after {
+            transform: translateX(20px);
+        }
+
+        .theme-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* ─── Alert Banner ─── */
+        .alert-banner {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 999;
+            padding: 0.85rem 1.25rem;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            backdrop-filter: blur(20px);
+            animation: slideIn 0.3s ease;
+            max-width: 320px;
+        }
+
+        .alert-banner.spam {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-banner.safe {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ─── Copy / Export buttons ─── */
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.85rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--accent2);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-sm:hover {
+            background: rgba(139, 92, 246, 0.12);
+            border-color: var(--accent);
+        }
+
+        /* ─── Keyword highlights ─── */
+        .kw-hit {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-radius: 3px;
+            padding: 0 2px;
+            font-weight: 600;
+        }
+
+        /* ─── Chart card ─── */
+        .chart-wrap {
+            position: relative;
+            height: 180px;
+        }
+
+        .rec-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0;
+        }
+
+        .rec-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.25s;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+        }
+
+        .rec-btn.recording {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            animation: rec-pulse 1.2s infinite;
+        }
+
+        @keyframes rec-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+            }
+
+            70% {
+                box-shadow: 0 0 0 18px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .rec-timer {
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--text);
+            letter-spacing: 0.05em;
+        }
+
+        .rec-status {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .rec-status.active {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .waveform {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 36px;
+        }
+
+        .waveform span {
+            width: 4px;
+            border-radius: 2px;
+            background: var(--accent);
+            height: 6px;
+        }
+
+        .waveform.active span {
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .waveform.active span:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .waveform.active span:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .waveform.active span:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .waveform.active span:nth-child(5) {
+            animation-delay: 0.15s;
+        }
+
+        .waveform.active span:nth-child(6) {
+            animation-delay: 0.25s;
+        }
+
+        .waveform.active span:nth-child(7) {
+            animation-delay: 0.05s;
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                height: 6px;
+            }
+
+            50% {
+                height: 28px;
+            }
+        }
+
+        /* ─── Animations ─── */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* ─── Donut Ring ─── */
+        .donut-wrap {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            top: 0.85rem;
+            right: 0.85rem;
+        }
+
+        .donut {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 1400px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .topbar {
+                padding: 0.75rem 1rem;
+            }
         }
 
         @media (max-width: 480px) {
-            header h1 { font-size: 1.7rem; }
-            .card { padding: 1.4rem; }
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 6px;
         }
     </style>
 </head>
+
 <body>
 
-<button class="theme-toggle" id="theme-toggle" title="Toggle theme">☀️</button>
+    <!-- Alert Banner -->
+    <div class="alert-banner" id="alert-banner"></div>
 
-<header>
-    <h1>🛡️ SPAM EMAIL CALL DETECTOR</h1>
-    <p>AI-powered detection using DistilBERT — paste text or upload a call recording</p>
-</header>
-
-<div class="container">
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="text" id="tab-text">📝 Text MSG</button>
-        <button class="tab-btn" data-tab="audio" id="tab-audio">🎙️ Audio Upload</button>
-    </div>
-
-    <!-- Text Card -->
-    <div class="card active" id="card-text">
-        <div class="samples">
-            <span style="font-size:.78rem;color:var(--muted);align-self:center;">Try:</span>
-            <button class="sample-chip" onclick="fillSample(0)">🏦 Bank OTP scam</button>
-            <button class="sample-chip" onclick="fillSample(1)">🎁 Prize winner</button>
-            <button class="sample-chip" onclick="fillSample(2)">💰 Loan offer</button>
-            <button class="sample-chip" onclick="fillSample(3)">📞 Normal call</button>
+    <!-- ─── Sidebar ─── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🛡️</div>
+            <div class="sidebar-logo-text">SpamShield</div>
         </div>
-        <textarea id="input-text" placeholder="Paste the call transcript here, e.g.&#10;&#10;&quot;Congratulations! You've won a free iPhone. Press 1 to claim now…&quot;"></textarea>
+        <ul class="nav-list">
+            <div class="nav-section">Main</div>
+            <li class="nav-item active" data-page="page-dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </li>
+            <div class="nav-section">Info</div>
+            <li class="nav-item" data-page="page-history">
+                <span class="nav-icon">📋</span> Recent Activity
+            </li>
+            <li class="nav-item" data-page="page-model">
+                <span class="nav-icon">🤖</span> Model Status
+            </li>
+            <li class="nav-item" data-page="page-signals">
+                <span class="nav-icon">💡</span> Spam Signals
+            </li>
+            <li class="nav-item" data-page="page-formats">
+                <span class="nav-icon">📁</span> Supported Formats
+            </li>
+        </ul>
+    </aside>
 
-        <div class="suggestions-wrap" id="suggestions-wrap">
-            <div class="suggestions-title">⚠️ Spam Indicators Detected</div>
-            <div id="suggestions-list"></div>
-        </div>
-
-        <button class="btn" id="btn-text" onclick="analyzeText()">Analyze Text</button>
-        <div class="error-msg" id="err-text"></div>
-        <div class="result" id="res-text"></div>
-    </div>
-
-    <!-- Audio Card -->
-    <div class="card" id="card-audio">
-        <select class="lang-select" id="lang-select">
-            <option value="auto">🌐 Auto Detect Language</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="hi">🇮🇳 Hindi</option>
-            <option value="te">🇮🇳 Telugu</option>
-        </select>
-        <div class="drop-zone" id="drop-zone">
-            <div class="icon">📂</div>
-            <div>Drag & drop an audio file or <strong>click to browse</strong></div>
-            <div style="margin-top:.4rem; font-size:.78rem;">WAV, MP3, OGG, FLAC, M4A, WEBM — max 50 MB</div>
-            <input type="file" id="audio-file" accept=".wav,.mp3,.ogg,.flac,.m4a,.webm" />
-            <div class="file-name" id="file-name"></div>
+    <!-- ─── Main Content ─── -->
+    <div class="main">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <div class="topbar-title">Welcome back, User 👋</div>
+            </div>
+            <div class="topbar-right">
+                <span class="theme-label" id="theme-label">🌙</span>
+                <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark"></div>
+            </div>
         </div>
 
-        <div class="audio-player-wrap" id="audio-player-wrap">
-            <audio id="audio-player" controls></audio>
-        </div>
+        <!-- Content -->
+        <div class="content">
 
-        <button class="btn-outline" id="btn-extract" onclick="extractText()" style="display:none;">
-            🔍 Extract Text from Audio
-        </button>
+            <!-- ─── Page: Dashboard ─── -->
+            <div class="page active" id="page-dashboard">
 
-        <div class="extracted-wrap" id="extracted-wrap">
-            <div class="extracted-label">📄 Extracted Transcript (editable)</div>
-            <textarea class="extracted-text" id="extracted-text" placeholder="Extracted text will appear here..."></textarea>
-        </div>
 
-        <button class="btn" id="btn-audio" onclick="analyzeAudio()">Analyze Audio</button>
-        <div class="error-msg" id="err-audio"></div>
-        <div class="result" id="res-audio"></div>
-    </div>
+                <!-- Dashboard Grid -->
+                <div class="dashboard">
+                    <!-- Left: Input Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔬 Detection Input</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="tabs">
+                                <button class="tab-btn active" data-tab="text" id="tab-text">📝 Text</button>
+                                <button class="tab-btn" data-tab="audio" id="tab-audio">🎙️ Upload</button>
+                                <button class="tab-btn" data-tab="record" id="tab-record">🔴 Live Record</button>
+                            </div>
 
-    <!-- History Panel -->
-    <div class="history-wrap">
-        <div class="history-header">
-            <span>🕘 Recent Predictions</span>
-            <button class="history-clear" onclick="clearHistory()">Clear all</button>
-        </div>
-        <div id="history-list"><div class="history-empty">No predictions yet.</div></div>
-    </div>
-</div>
+                            <!-- Text Tab -->
+                            <div class="tab-content active" id="content-text">
+                                <div class="samples">
+                                    <button class="sample-chip" onclick="fillSample(0)">🏦 Bank OTP scam</button>
+                                    <button class="sample-chip" onclick="fillSample(1)">🎁 Prize winner</button>
+                                    <button class="sample-chip" onclick="fillSample(2)">💰 Loan offer</button>
+                                    <button class="sample-chip" onclick="fillSample(3)">📞 Normal call</button>
+                                </div>
+                                <textarea id="input-text" placeholder="Paste the call transcript here..."></textarea>
+                                <div class="suggestions-wrap" id="suggestions-wrap">
+                                    <div class="suggestions-title">⚠️ Spam Indicators Detected</div>
+                                    <div id="suggestions-list"></div>
+                                </div>
+                                <button class="btn" id="btn-text" onclick="analyzeText()">⚡ Analyze Text</button>
+                                <div class="error-msg" id="err-text"></div>
+                            </div>
 
-<footer>Spam Call Detector &mdash; Powered by DistilBERT &amp; Whisper</footer>
+                            <!-- Audio Tab -->
+                            <div class="tab-content" id="content-audio">
+                                <select class="lang-select" id="lang-select">
+                                    <option value="auto">🌐 Auto Detect Language</option>
+                                    <option value="en">🇬🇧 English</option>
+                                    <option value="hi">🇮🇳 Hindi</option>
+                                    <option value="te">🇮🇳 Telugu</option>
+                                </select>
+                                <div class="drop-zone" id="drop-zone">
+                                    <div class="icon">📁</div>
+                                    <div>Drag & drop audio or <strong>click to browse</strong></div>
+                                    <div style="margin-top:.35rem; font-size:.75rem;">WAV, MP3, OGG, FLAC, M4A, WEBM —
+                                        max
+                                        50 MB</div>
+                                    <input type="file" id="audio-file" accept=".wav,.mp3,.ogg,.flac,.m4a,.webm" />
+                                    <div class="file-name" id="file-name"></div>
+                                </div>
+                                <div class="audio-player-wrap" id="audio-player-wrap">
+                                    <audio id="audio-player" controls></audio>
+                                </div>
+                                <button class="btn btn-outline" id="btn-extract" onclick="extractText()"
+                                    style="display:none;">🔍 Extract Text</button>
+                                <div class="extracted-wrap" id="extracted-wrap">
+                                    <div class="extracted-label">Extracted Transcript</div>
+                                    <textarea class="extracted-text" id="extracted-text"></textarea>
+                                </div>
+                                <button class="btn" id="btn-audio" onclick="analyzeAudio()">⚡ Analyze Audio</button>
+                                <div class="error-msg" id="err-audio"></div>
+                            </div>
 
-<script>
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('card-' + btn.dataset.tab).classList.add('active');
-        });
-    });
+                            <!-- Live Record Tab -->
+                            <div class="tab-content" id="content-record">
+                                <div class="rec-center">
+                                    <div class="waveform" id="waveform">
+                                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                                    </div>
+                                    <div class="rec-timer" id="rec-timer">00:00</div>
+                                    <button class="rec-btn" id="rec-btn" onclick="toggleRecording()">🎙️</button>
+                                    <div class="rec-status" id="rec-status">Click to start recording</div>
+                                </div>
+                                <div class="audio-player-wrap" id="rec-player-wrap">
+                                    <audio id="rec-player" controls></audio>
+                                </div>
+                                <button class="btn" id="btn-record" onclick="analyzeRecording()" style="display:none;">⚡
+                                    Analyze Recording</button>
+                                <div class="error-msg" id="err-record"></div>
+                            </div>
+                        </div>
+                    </div>
 
-    // Theme toggle
-    const themeBtn = document.getElementById('theme-toggle');
-    function applyTheme(light) {
-        document.body.classList.toggle('light', light);
-        themeBtn.textContent = light ? '🌙' : '☀️';
-        localStorage.setItem('theme', light ? 'light' : 'dark');
-    }
-    themeBtn.addEventListener('click', () => applyTheme(!document.body.classList.contains('light')));
-    applyTheme(localStorage.getItem('theme') === 'light');
+                    <!-- Col 2: Results & History -->
+                    <div class="right-col">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">📊 Analysis Result</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="result-placeholder" id="result-placeholder">
+                                    <div class="icon">🔮</div>
+                                    <div>Results will appear here after analysis</div>
+                                </div>
+                                <div class="result" id="res-text"></div>
+                                <div class="result" id="res-audio"></div>
+                                <div class="result" id="res-record"></div>
+                            </div>
+                        </div>
+                    </div>
 
-    // Sample texts
-    const SAMPLES = [
-        "Your bank account has been blocked. Share your OTP immediately to restore access.",
-        "Congratulations! You've won a $1000 gift card. Call now to claim your prize.",
-        "You are pre-approved for a Rs.5 lakh loan. No documents needed. Call us now.",
-        "Hi, this is John. I'm calling to confirm our meeting scheduled for tomorrow at 3pm."
-    ];
-    function fillSample(i) {
-        const ta = document.getElementById('input-text');
-        ta.value = SAMPLES[i];
-        ta.dispatchEvent(new Event('input'));
-    }
+                </div>
 
-    // Live suggestions as user types
-    let suggestTimer;
-    document.getElementById('input-text').addEventListener('input', () => {
-        clearTimeout(suggestTimer);
-        suggestTimer = setTimeout(fetchSuggestions, 400);
-    });
-    async function fetchSuggestions() {
-        const text = document.getElementById('input-text').value.trim();
-        const wrap = document.getElementById('suggestions-wrap');
-        const list = document.getElementById('suggestions-list');
-        if (!text) { wrap.classList.remove('show'); return; }
-        try {
-            const resp = await fetch('/suggestions', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-            const data = await resp.json();
-            if (data.suggestions.length) {
-                list.innerHTML = data.suggestions.map(s => `<div class="suggestion-item">⚠️ ${s}</div>`).join('');
-                wrap.classList.add('show');
-            } else {
-                wrap.classList.remove('show');
+            </div><!-- end page-dashboard -->
+
+            <!-- ─── Page: Recent Activity ─── -->
+            <div class="page" id="page-history">
+                <div class="card" style="max-height: calc(100vh - 120px); display: flex; flex-direction: column;">
+                    <div class="card-header">
+                        <div class="history-header"
+                            style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                            <div class="card-title">📋 Recent Activity</div>
+                            <button class="history-clear" onclick="clearHistory()">Clear All</button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="overflow-y: auto;">
+                        <div class="history-list" id="history-list">
+                            <div class="history-empty">No predictions yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Page: Model Status ─── -->
+            <div class="page" id="page-model">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🤖 Model Status</div>
+                        <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--green)">
+                            <div class="status-dot"></div> Live
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="model-stat"><span class="model-stat-label">Model</span><span
+                                class="model-stat-val">DistilBERT</span></div>
+                        <div class="model-stat"><span class="model-stat-label">Transcription</span><span
+                                class="model-stat-val">Whisper Base</span></div>
+                        <div class="model-stat"><span class="model-stat-label">Languages</span><span
+                                class="model-stat-val">EN / HI / TE</span></div>
+                        <div class="model-stat"><span class="model-stat-label">Max File</span><span
+                                class="model-stat-val">50 MB</span></div>
+                        <div class="model-stat"><span class="model-stat-label">Voice Analysis</span><span
+                                class="model-stat-val">AI Detection</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Page: Spam Signals ─── -->
+            <div class="page" id="page-signals">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">💡 Spam Signals</div>
+                    </div>
+                    <div class="card-body" style="display:flex;flex-direction:column;gap:0.6rem;">
+                        <div class="tip-item"><span class="tip-icon">🏦</span>
+                            <div>
+                                <div class="tip-title">OTP Requests</div>Banks never ask for OTP over calls
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">🎁</span>
+                            <div>
+                                <div class="tip-title">Prize Claims</div>Unsolicited prize offers are always scams
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">⏰</span>
+                            <div>
+                                <div class="tip-title">Urgency Tactics</div>Pressure to act fast is a red flag
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">🤖</span>
+                            <div>
+                                <div class="tip-title">AI Voice</div>Robotic or unnaturally smooth voices
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">💳</span>
+                            <div>
+                                <div class="tip-title">Credit Card Scam</div>Verify directly with your bank
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">🔗</span>
+                            <div>
+                                <div class="tip-title">Suspicious Links</div>Never click unknown links shared over calls
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">🏛️</span>
+                            <div>
+                                <div class="tip-title">Government Impersonation</div>IRS/police never threaten via phone
+                                calls
+                            </div>
+                        </div>
+                        <div class="tip-item"><span class="tip-icon">🔑</span>
+                            <div>
+                                <div class="tip-title">Password Phishing</div>No legitimate service asks for your
+                                password
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Page: Supported Formats ─── -->
+            <div class="page" id="page-formats">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">📁 Supported Formats</div>
+                    </div>
+                    <div class="card-body">
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;">
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">🎵</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">WAV</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Waveform Audio
+                                </div>
+                            </div>
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">🎶</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">MP3</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">MPEG Audio</div>
+                            </div>
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">🔊</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">OGG</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Ogg Vorbis</div>
+                            </div>
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">💿</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">FLAC</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Lossless Audio
+                                </div>
+                            </div>
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">📱</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">M4A</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Apple Audio</div>
+                            </div>
+                            <div
+                                style="padding:1rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;text-align:center;">
+                                <div style="font-size:1.5rem;margin-bottom:0.4rem;">🌐</div>
+                                <div style="font-weight:700;color:var(--accent2);font-size:0.9rem;">WEBM</div>
+                                <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Web Media</div>
+                            </div>
+                        </div>
+                        <div
+                            style="margin-top:1rem;padding:0.75rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--glass-border);font-size:0.8rem;color:var(--muted);">
+                            ⚠️ Max file size: <strong style="color:var(--accent2)">50 MB</strong> per upload</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end .content -->
+    </div><!-- end .main -->
+
+    <script>
+        // Stats
+        let stats = { total: 0, spam: 0, safe: 0 };
+        const chartLabels = [], chartSpam = [], chartSafe = [];
+
+        function updateChart(isSpam) {
+            // chart removed
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            document.getElementById('theme-label').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+        }
+
+        // Alert banner
+        let alertTimeout;
+        function showAlert(isSpam) {
+            const el = document.getElementById('alert-banner');
+            el.className = 'alert-banner ' + (isSpam ? 'spam' : 'safe');
+            el.textContent = isSpam ? '🚨 Spam call detected! Stay alert.' : '✅ Call appears safe.';
+            el.style.display = 'block';
+            clearTimeout(alertTimeout);
+            alertTimeout = setTimeout(() => { el.style.display = 'none'; }, 4000);
+            if (isSpam) {
+                try { const a = new AudioContext(); const o = a.createOscillator(); const g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.setValueAtTime(0.3, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.4); o.start(); o.stop(a.currentTime + 0.4); } catch (e) { }
             }
-        } catch { wrap.classList.remove('show'); }
-    }
-
-    // Drop zone
-    const dropZone  = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('audio-file');
-    const fileName  = document.getElementById('file-name');
-
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', e => {
-        e.preventDefault(); dropZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showFile(); }
-    });
-    fileInput.addEventListener('change', showFile);
-    function showFile() {
-        const file = fileInput.files[0];
-        fileName.textContent = file ? '📎 ' + file.name : '';
-        if (file) {
-            const player = document.getElementById('audio-player');
-            player.src = URL.createObjectURL(file);
-            document.getElementById('audio-player-wrap').classList.add('show');
-            document.getElementById('btn-extract').style.display = 'flex';
-            document.getElementById('extracted-wrap').classList.remove('show');
-            document.getElementById('extracted-text').value = '';
         }
-    }
 
-    // Extract text from audio
-    async function extractText() {
-        const btn = document.getElementById('btn-extract');
-        btn.disabled = true; btn.textContent = '⏳ Extracting...';
-        clearFeedback('err-audio', 'res-audio');
-        try {
-            const fd = new FormData();
-            fd.append('file', fileInput.files[0]);
-            fd.append('language', document.getElementById('lang-select').value);
-            const resp = await fetch('/transcribe', { method: 'POST', body: fd });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || 'Transcription failed');
-            document.getElementById('extracted-text').value = data.transcript;
-            document.getElementById('extracted-wrap').classList.add('show');
-            const resBox = document.getElementById('res-audio');
-            const langNames = { en: 'English', hi: 'Hindi', te: 'Telugu' };
-            const langName = langNames[data.detected_language] || (data.detected_language || '').toUpperCase();
-            const isAI = data.voice_type === 'AI Generated';
-            const cls = isAI ? 'ai' : data.voice_type === 'Unknown' ? 'unknown' : 'human';
-            resBox.innerHTML = `
-                <div class="voice-badge ${cls}">${isAI ? '🤖 AI Generated Voice' : '👤 Human Voice'} — ${data.confidence}% confidence</div>
-                <div class="detected-lang">🌐 Detected Language: <strong>${langName}</strong></div>`;
-            resBox.classList.add('show');
-        } catch (e) { showError('err-audio', e.message); }
-        finally { btn.disabled = false; btn.textContent = '🔍 Extract Text from Audio'; }
-    }
-
-    // History
-    const history = [];
-    function addHistory(text, data) {
-        history.unshift({ text: text.slice(0, 60) + (text.length > 60 ? '…' : ''), label: data.label, confidence: data.confidence });
-        if (history.length > 10) history.pop();
-        renderHistory();
-    }
-    function renderHistory() {
-        const list = document.getElementById('history-list');
-        if (!history.length) { list.innerHTML = '<div class="history-empty">No predictions yet.</div>'; return; }
-        list.innerHTML = history.map(h => `
-            <div class="history-item">
-                <span class="history-text">${h.text}</span>
-                <span class="history-badge ${h.label === 'Spam' ? 'spam' : 'safe'}">${h.label === 'Spam' ? '🚨' : '✅'} ${h.label}</span>
-                <span class="history-conf">${h.confidence}%</span>
-            </div>`).join('');
-    }
-    function clearHistory() { history.length = 0; renderHistory(); }
-
-    // Helpers
-    function setLoading(btn, loading) {
-        if (loading) {
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Analyzing…';
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = btn.id === 'btn-text' ? 'Analyze Text' : 'Analyze Audio';
-        }
-    }
-    function showError(id, msg) {
-        const el = document.getElementById(id);
-        el.textContent = msg; el.classList.add('show');
-    }
-    function clearFeedback(errId, resId) {
-        document.getElementById(errId).classList.remove('show');
-        const r = document.getElementById(resId);
-        r.classList.remove('show'); r.innerHTML = '';
-    }
-    function renderResult(container, data) {
-        const isSpam = data.label === 'Spam';
-        const barColor = isSpam ? 'var(--red)' : 'var(--green)';
-        let html = `
-            <div class="result-label ${isSpam ? 'spam' : 'nospan'}">
-                ${isSpam ? '🚨' : '✅'} ${data.label}
-            </div>
-            <div class="confidence-bar-wrap">
-                <div class="confidence-bar" style="width:${data.confidence}%;background:${barColor}"></div>
-            </div>
-            <div class="confidence-text">Confidence: ${data.confidence}%</div>
-            <div class="probs">
-                <div class="prob-chip safe">✅ Not Spam: ${data.probabilities['Not Spam']}%</div>
-                <div class="prob-chip spam">🚨 Spam: ${data.probabilities['Spam']}%</div>
-            </div>`;
-        if (data.voice_type) {
-            const isAI = data.voice_type === 'AI Generated';
-            const cls = isAI ? 'ai' : data.voice_type === 'Unknown' ? 'unknown' : 'human';
-            html += `<div class="voice-badge ${cls}">${isAI ? '🤖 AI Generated Voice' : '👤 Human Voice'} — ${data.confidence}% confidence</div>`;
-        }
-        if (data.detected_language) {
-            const langNames = { en: 'English', hi: 'Hindi', te: 'Telugu' };
-            const langName = langNames[data.detected_language] || data.detected_language.toUpperCase();
-            html += `<div class="detected-lang">🌐 Detected Language: <strong>${langName}</strong></div>`;
-        }
-        if (data.transcript) {
-            html += `<div class="transcript-box"><strong>Transcript:</strong><br/>${data.transcript}</div>`;
-        }
-        container.innerHTML = html;
-        container.classList.add('show');
-    }
-
-    // API calls
-    async function analyzeText() {
-        const btn  = document.getElementById('btn-text');
-        const text = document.getElementById('input-text').value.trim();
-        clearFeedback('err-text', 'res-text');
-        if (!text) { showError('err-text', 'Please enter some text.'); return; }
-        setLoading(btn, true);
-        try {
-            const resp = await fetch('/predict/text', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
+        // Highlight spam keywords in transcript
+        const SPAM_KW = ['otp', 'prize', 'won', 'lottery', 'gift card', 'loan', 'pre-approved', 'account blocked', 'verify your account', 'click here', 'call now', 'limited time', 'free', 'congratulations', 'irs', 'tax', 'arrest', 'social security', 'password', 'credit card'];
+        function highlightKeywords(text) {
+            let out = text;
+            SPAM_KW.forEach(kw => {
+                const re = new RegExp('(' + kw + ')', 'gi');
+                out = out.replace(re, '<span class="kw-hit">$1</span>');
             });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || 'Server error');
-            renderResult(document.getElementById('res-text'), data);
-            addHistory(text, data);
-        } catch (e) { showError('err-text', e.message); }
-        finally { setLoading(btn, false); }
-    }
+            return out;
+        }
 
-    async function analyzeAudio() {
-        const btn = document.getElementById('btn-audio');
-        clearFeedback('err-audio', 'res-audio');
-        if (!fileInput.files.length) { showError('err-audio', 'Please select an audio file.'); return; }
-        setLoading(btn, true);
-        try {
-            const fd = new FormData();
-            fd.append('file', fileInput.files[0]);
-            fd.append('language', document.getElementById('lang-select').value);
-            const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.detail || 'Server error');
-            renderResult(document.getElementById('res-audio'), data);
-            addHistory(data.transcript || fileInput.files[0].name, data);
-        } catch (e) { showError('err-audio', e.message); }
-        finally { setLoading(btn, false); }
-    }
-</script>
+        // Nav page switching
+        const pageTitles = {
+            'page-dashboard': 'Dashboard 📊',
+            'page-history': 'Recent Activity 📋',
+            'page-model': 'Model Status 🤖',
+            'page-signals': 'Spam Signals 💡',
+            'page-formats': 'Supported Formats 📁'
+        };
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                item.classList.add('active');
+                document.getElementById(item.dataset.page).classList.add('active');
+                document.querySelector('.topbar-title').textContent = pageTitles[item.dataset.page];
+            });
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('content-' + btn.dataset.tab).classList.add('active');
+
+                // Switch corresponding result view
+                const tabsList = ['text', 'audio', 'record'];
+                tabsList.forEach(t => {
+                    const res = document.getElementById('res-' + t);
+                    if (res) res.classList.remove('show');
+                });
+                const activeRes = document.getElementById('res-' + btn.dataset.tab);
+                if (activeRes && activeRes.innerHTML.trim() !== '') {
+                    activeRes.classList.add('show');
+                    document.getElementById('result-placeholder').style.display = 'none';
+                } else {
+                    document.getElementById('result-placeholder').style.display = 'block';
+                }
+            });
+        });
+
+        // Samples
+        const SAMPLES = [
+            "Your bank account has been blocked. Share your OTP immediately to restore access.",
+            "Congratulations! You've won a $1000 gift card. Call now to claim your prize.",
+            "You are pre-approved for a Rs.5 lakh loan. No documents needed. Call us now.",
+            "Hi, this is John. I'm calling to confirm our meeting scheduled for tomorrow at 3pm."
+        ];
+        function fillSample(i) {
+            const ta = document.getElementById('input-text');
+            ta.value = SAMPLES[i];
+            ta.dispatchEvent(new Event('input'));
+        }
+
+        // Suggestions
+        let suggestTimer;
+        document.getElementById('input-text').addEventListener('input', () => {
+            clearTimeout(suggestTimer);
+            suggestTimer = setTimeout(fetchSuggestions, 400);
+        });
+        async function fetchSuggestions() {
+            const text = document.getElementById('input-text').value.trim();
+            const wrap = document.getElementById('suggestions-wrap');
+            const list = document.getElementById('suggestions-list');
+            if (!text) { wrap.classList.remove('show'); return; }
+            try {
+                const resp = await fetch('/suggestions', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await resp.json();
+                if (data.suggestions.length) {
+                    list.innerHTML = data.suggestions.map(s => `<div class="suggestion-item">${s}</div>`).join('');
+                    wrap.classList.add('show');
+                } else { wrap.classList.remove('show'); }
+            } catch { wrap.classList.remove('show'); }
+        }
+
+        // Drop zone
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('audio-file');
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showFile(); }
+        });
+        fileInput.addEventListener('change', showFile);
+        function showFile() {
+            const file = fileInput.files[0];
+            document.getElementById('file-name').textContent = file ? file.name : '';
+            if (file) {
+                document.getElementById('audio-player').src = URL.createObjectURL(file);
+                document.getElementById('audio-player-wrap').classList.add('show');
+                document.getElementById('btn-extract').style.display = 'flex';
+                document.getElementById('extracted-wrap').classList.remove('show');
+            }
+        }
+
+        // Extract
+        async function extractText() {
+            const btn = document.getElementById('btn-extract');
+            btn.disabled = true; btn.textContent = '⏳ Extracting...';
+            clearFeedback('err-audio', 'res-audio');
+            try {
+                const fd = new FormData();
+                fd.append('file', fileInput.files[0]);
+                fd.append('language', document.getElementById('lang-select').value);
+                const resp = await fetch('/transcribe', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Failed');
+                document.getElementById('extracted-text').value = data.transcript;
+                document.getElementById('extracted-wrap').classList.add('show');
+            } catch (e) { showError('err-audio', e.message); }
+            finally { btn.disabled = false; btn.textContent = '🔍 Extract Text'; }
+        }
+
+        // History
+        const history = [];
+        function addHistory(text, data) {
+            history.unshift({ text: text.slice(0, 50) + (text.length > 50 ? '…' : ''), label: data.label, confidence: data.confidence });
+            if (history.length > 10) history.pop();
+            renderHistory();
+        }
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if (!history.length) { list.innerHTML = '<div class="history-empty">No predictions yet</div>'; return; }
+            list.innerHTML = history.map(h => `
+            <div class="history-item ${h.label === 'Spam' ? 'spam-border' : 'safe-border'}">
+                <span class="history-text">${h.text}</span>
+                <span class="history-badge ${h.label === 'Spam' ? 'spam' : 'safe'}">${h.label}</span>
+            </div>`).join('');
+        }
+        function clearHistory() { history.length = 0; renderHistory(); }
+
+        // Helpers
+        function setLoading(btn, loading) {
+            if (loading) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Analyzing...'; }
+            else { btn.disabled = false; btn.innerHTML = btn.id === 'btn-text' ? '⚡ Analyze Text' : '⚡ Analyze Audio'; }
+        }
+        function showError(id, msg) { document.getElementById(id).textContent = msg; document.getElementById(id).classList.add('show'); }
+        function clearFeedback(errId, resId) {
+            document.getElementById(errId).classList.remove('show');
+            const r = document.getElementById(resId); r.classList.remove('show'); r.innerHTML = '';
+        }
+
+        function updateStats(isSpam) {
+            stats.total++;
+            if (isSpam) stats.spam++; else stats.safe++;
+            showAlert(isSpam);
+        }
+
+        function renderResult(container, data) {
+            const isSpam = data.label === 'Spam';
+            document.getElementById('result-placeholder').style.display = 'none';
+            ['res-text', 'res-audio', 'res-record'].forEach(i => { if (i !== container.id) document.getElementById(i).classList.remove('show'); });
+
+            let html = `
+            <div class="result-header">
+                <div class="result-icon ${isSpam ? 'spam' : 'safe'}">${isSpam ? '🚨' : '✅'}</div>
+                <div class="result-label ${isSpam ? 'spam' : 'safe'}">${data.label}</div>
+            </div>
+            <div class="confidence-bar">
+                <div class="confidence-fill" style="width:${data.confidence}%;background:${isSpam ? 'var(--red)' : 'var(--green)'}"></div>
+            </div>
+            <div class="confidence-text">${data.confidence}% confidence</div>
+            <div class="probs">
+                <div class="prob-item safe"><span class="value">${data.probabilities['Not Spam']}%</span>Safe</div>
+                <div class="prob-item spam"><span class="value">${data.probabilities['Spam']}%</span>Spam</div>
+            </div>`;
+
+            if (data.voice_type) {
+                const isAI = data.voice_type === 'AI Generated';
+                const aiP = data.ai_prob !== undefined ? Math.round(data.ai_prob) : (isAI ? Math.round(data.voice_confidence) : 100 - Math.round(data.voice_confidence));
+                const huP = data.human_prob !== undefined ? Math.round(data.human_prob) : (isAI ? 100 - Math.round(data.voice_confidence) : Math.round(data.voice_confidence));
+                const display = `🤖 AI Voice (${aiP}%) &nbsp;|&nbsp; 👤 Human Voice (${huP}%)`;
+                html += `<div class="voice-badge ${isAI ? 'ai' : 'human'}">${display}</div>`;
+            }
+            if (data.transcript) {
+                html += `<div class="transcript-box">${data.transcript}</div>`;
+            }
+
+            container.innerHTML = html;
+            container.classList.add('show');
+            updateStats(isSpam);
+        }
+
+        function exportReport(json) {
+            const blob = new Blob([json], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'spamshield-report-' + Date.now() + '.json';
+            a.click();
+        }
+
+        // API calls
+        async function analyzeText() {
+            const btn = document.getElementById('btn-text');
+            const text = document.getElementById('input-text').value.trim();
+            clearFeedback('err-text', 'res-text');
+            if (!text) { showError('err-text', 'Please enter some text.'); return; }
+            setLoading(btn, true);
+            try {
+                const resp = await fetch('/predict/text', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Server error');
+                renderResult(document.getElementById('res-text'), data);
+                addHistory(text, data);
+            } catch (e) { showError('err-text', e.message); }
+            finally { setLoading(btn, false); }
+        }
+
+        async function analyzeAudio() {
+            const btn = document.getElementById('btn-audio');
+            clearFeedback('err-audio', 'res-audio');
+            if (!fileInput.files.length) { showError('err-audio', 'Please select an audio file.'); return; }
+            setLoading(btn, true);
+            try {
+                const fd = new FormData();
+                fd.append('file', fileInput.files[0]);
+                fd.append('language', document.getElementById('lang-select').value);
+                const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Server error');
+                renderResult(document.getElementById('res-audio'), data);
+                addHistory(data.transcript || fileInput.files[0].name, data);
+            } catch (e) { showError('err-audio', e.message); }
+            finally { setLoading(btn, false); }
+        }
+        // Live Recording
+        let mediaRecorder, recChunks = [], recBlob = null, recTimer = null, recSeconds = 0;
+
+        async function toggleRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                return;
+            }
+            clearFeedback('err-record', 'res-audio');
+            document.getElementById('btn-record').style.display = 'none';
+            document.getElementById('rec-player-wrap').classList.remove('show');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recChunks = []; recSeconds = 0;
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => recChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    clearInterval(recTimer);
+                    recBlob = new Blob(recChunks, { type: 'audio/webm' });
+                    document.getElementById('rec-player').src = URL.createObjectURL(recBlob);
+                    document.getElementById('rec-player-wrap').classList.add('show');
+                    document.getElementById('btn-record').style.display = 'flex';
+                    document.getElementById('rec-btn').classList.remove('recording');
+                    document.getElementById('rec-btn').textContent = '🎙️';
+                    document.getElementById('rec-status').textContent = 'Recording ready — preview or analyze';
+                    document.getElementById('rec-status').classList.remove('active');
+                    document.getElementById('waveform').classList.remove('active');
+                };
+                mediaRecorder.start();
+                document.getElementById('rec-btn').classList.add('recording');
+                document.getElementById('rec-btn').textContent = '⏹️';
+                document.getElementById('rec-status').textContent = 'Recording... click to stop';
+                document.getElementById('rec-status').classList.add('active');
+                document.getElementById('waveform').classList.add('active');
+                recTimer = setInterval(() => {
+                    recSeconds++;
+                    const m = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+                    const s = String(recSeconds % 60).padStart(2, '0');
+                    document.getElementById('rec-timer').textContent = m + ':' + s;
+                }, 1000);
+            } catch (e) {
+                showError('err-record', 'Microphone access denied. Please allow mic permission.');
+            }
+        }
+
+        async function analyzeRecording() {
+            if (!recBlob) { showError('err-record', 'No recording found.'); return; }
+            const btn = document.getElementById('btn-record');
+            clearFeedback('err-record', 'res-record');
+            btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Analyzing...';
+            try {
+                const fd = new FormData();
+                fd.append('file', new File([recBlob], 'recording.webm', { type: 'audio/webm' }));
+                fd.append('language', 'auto');
+                const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Server error');
+                renderResult(document.getElementById('res-record'), data);
+                addHistory(data.transcript || 'Live Recording', data);
+            } catch (e) { showError('err-record', e.message); }
+            finally { btn.disabled = false; btn.innerHTML = '⚡ Analyze Recording'; }
+        }
+
+    </script>
 
 </body>
+
 </html>
