@@ -9,6 +9,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Set cache directories for model downloads inside the container
+ENV XDG_CACHE_HOME=/app/.cache
+ENV HF_HOME=/app/.cache/huggingface
+
 # Pre-download models at build time so Render cold-starts are instant
 # Whisper base model (~139 MB)
 RUN python -c "import whisper; whisper.load_model('base')"
