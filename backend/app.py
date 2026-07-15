@@ -275,13 +275,14 @@ def predict_text(data: TextRequest):
 
 
 @app.post("/transcribe")
-async def transcribe_audio(
+def transcribe_audio(
     file: UploadFile = File(...),
     language: str = Form(default="auto")
 ):
     suffix = os.path.splitext(file.filename)[-1] or ".tmp"
+    contents = file.file.read()
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
+        tmp.write(contents)
         tmp_path = tmp.name
     try:
         lang_code = LANGUAGE_MAP.get(language)
@@ -295,13 +296,14 @@ async def transcribe_audio(
 
 
 @app.post("/predict/audio")
-async def predict_audio(
+def predict_audio(
     file: UploadFile = File(...),
     language: str = Form(default="auto")
 ):
     suffix = os.path.splitext(file.filename)[-1] or ".tmp"
+    contents = file.file.read()
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
+        tmp.write(contents)
         tmp_path = tmp.name
     try:
         lang_code = LANGUAGE_MAP.get(language)
