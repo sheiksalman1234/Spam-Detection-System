@@ -1,5 +1,8 @@
 import os
+import warnings
 
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 if os.name == "nt":
     os.environ["PATH"] = r"C:\ffmpeg\bin;" + os.environ.get("PATH", "")
 
@@ -209,7 +212,7 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
 def transcribe(audio_path: str, language: str = None) -> dict:
     wmodel = get_whisper()
     # Transcribe in the original language (Telugu, Hindi, etc.)
-    options = {"task": "transcribe"}
+    options = {"task": "transcribe", "fp16": False}
     if language and language not in ("auto",):
         options["language"] = language  # Hint for better detection accuracy
     result = wmodel.transcribe(audio_path, **options)
