@@ -51,7 +51,7 @@ def get_whisper():
     global whisper_model
     if whisper_model is None:
         print("Loading Whisper...")
-        whisper_model = whisper.load_model("base")
+        whisper_model = whisper.load_model("tiny")
         print("Whisper loaded!")
     return whisper_model
 
