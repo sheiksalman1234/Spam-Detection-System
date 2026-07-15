@@ -1420,15 +1420,65 @@
             .dashboard {
                 grid-template-columns: 1fr;
             }
+
+            .dashboard>.card,
+            .right-col {
+                height: auto;
+                min-height: 50vh;
+            }
         }
 
         @media (max-width: 768px) {
             .sidebar {
+                display: flex;
+                flex-direction: row;
+                width: 100vw;
+                height: 70px;
+                padding: 0;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                z-index: 1000;
+                border-right: none;
+                border-top: 1px solid var(--glass-border);
+                background: var(--surface);
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+            }
+
+            .sidebar-logo {
+                display: none;
+            }
+
+            .nav-list {
+                display: flex;
+                flex-direction: row;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            .nav-item {
+                flex-direction: column;
+                margin: 0;
+                padding: 0.5rem;
+                justify-content: center;
+                gap: 0.25rem;
+                border-radius: 0;
+                flex: 1;
+                font-size: 0.65rem;
+                text-align: center;
+            }
+
+            .nav-section {
                 display: none;
             }
 
             .main {
                 margin-left: 0;
+                padding-bottom: 70px;
+                /* Space for bottom nav */
             }
 
             .stats-row {
