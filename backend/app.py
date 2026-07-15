@@ -208,8 +208,8 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
 
 def transcribe(audio_path: str, language: str = None) -> dict:
     wmodel = get_whisper()
-    # Always translate to English so output is never in native script
-    options = {"task": "translate"}
+    # Transcribe in the original language (Telugu, Hindi, etc.)
+    options = {"task": "transcribe"}
     if language and language not in ("auto",):
         options["language"] = language  # Hint for better detection accuracy
     result = wmodel.transcribe(audio_path, **options)
