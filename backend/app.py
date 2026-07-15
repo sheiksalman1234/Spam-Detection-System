@@ -179,17 +179,38 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
             "ai_score": ai_score,
             "ai_prob": ai_prob,
             "human_prob": human_prob,
-            "voice_confidence": max(ai_prob, human_prob)
+            "voice_confidence": max(ai_prob, human_prob),
+            "features": {
+                "pitch_std": round(pitch_std, 2) if pitch_std != 999.0 else 0,
+                "flatness_std": round(flatness_std, 5),
+                "rolloff_std": round(rolloff_std, 2),
+                "mfcc_delta_mean": round(mfcc_delta_mean, 2),
+                "hnr": round(hnr, 2)
+            }
         }
     except Exception as e:
-        return {"voice_type": "Unknown", "ai_score": 0, "ai_prob": 0, "human_prob": 0, "voice_confidence": 0}
+        return {
+            "voice_type": "Unknown",
+            "ai_score": 0,
+            "ai_prob": 0,
+            "human_prob": 0,
+            "voice_confidence": 0,
+            "features": {
+                "pitch_std": 0,
+                "flatness_std": 0,
+                "rolloff_std": 0,
+                "mfcc_delta_mean": 0,
+                "hnr": 0
+            }
+        }
 
 
 def transcribe(audio_path: str, language: str = None) -> dict:
     wmodel = get_whisper()
-    options = {"task": "transcribe"}
-    if language:
-        options["language"] = language
+    # Always translate to English so output is never in native script
+    options = {"task": "translate"}
+    if language and language not in ("auto",):
+        options["language"] = language  # Hint for better detection accuracy
     result = wmodel.transcribe(audio_path, **options)
     transcript = result["text"].strip()
     detected_lang = result.get("language", "unknown")

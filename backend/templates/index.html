@@ -110,6 +110,7 @@
             font-weight: 700;
             background: linear-gradient(135deg, #c4b5fd, #f0abfc);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
         }
@@ -408,13 +409,14 @@
             gap: 1.25rem;
             min-height: 500px;
             height: calc(100vh - 120px);
+            overflow-y: auto;
         }
 
         .right-col>.card {
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            flex: 1;
+            flex: 0 0 auto;
         }
 
         .right-col>.card>.card-body {
@@ -1434,6 +1436,8 @@
                 flex-direction: row;
                 width: 100vw;
                 height: 70px;
+                min-height: auto;
+                top: auto;
                 padding: 0;
                 position: fixed;
                 bottom: 0;
@@ -1580,6 +1584,7 @@
                                 <button class="tab-btn active" data-tab="text" id="tab-text">📝 Text</button>
                                 <button class="tab-btn" data-tab="audio" id="tab-audio">🎙️ Upload</button>
                                 <button class="tab-btn" data-tab="record" id="tab-record">🔴 Live Record</button>
+                                <button class="tab-btn" data-tab="simulate" id="tab-simulate">📞 Call Sim</button>
                             </div>
 
                             <!-- Text Tab -->
@@ -1646,6 +1651,68 @@
                                     Analyze Recording</button>
                                 <div class="error-msg" id="err-record"></div>
                             </div>
+
+                            <!-- Live Call Simulator Tab -->
+                            <div class="tab-content" id="content-simulate">
+                                <div class="samples" style="margin-bottom: 0.75rem;">
+                                    <span
+                                        style="font-size: 0.78rem; font-weight: 600; color: var(--muted); align-self: center; margin-right: 0.5rem;">Select
+                                        Scenario:</span>
+                                    <button class="sample-chip" onclick="selectSimScenario(0)">🏦 Bank Security
+                                        (OTP)</button>
+                                    <button class="sample-chip" onclick="selectSimScenario(1)">🏛️ Court Warrant
+                                        (Threat)</button>
+                                    <button class="sample-chip" onclick="selectSimScenario(2)">🎁 Mega Lottery
+                                        (Bait)</button>
+                                    <button class="sample-chip" onclick="selectSimScenario(3)">📦 Courier Delivery
+                                        (Safe)</button>
+                                </div>
+
+                                <div id="sim-control-panel"
+                                    style="padding: 1.25rem; border: 1px dashed var(--glass-border); border-radius: 12px; text-align: center; background: rgba(255,255,255,0.02); margin-bottom: 0.5rem;">
+                                    <div id="sim-avatar" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📞</div>
+                                    <div id="sim-title"
+                                        style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem;">Inactive
+                                        Simulator</div>
+                                    <div id="sim-desc"
+                                        style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">Choose a
+                                        scenario above and call.</div>
+                                    <button class="btn" id="btn-start-sim" onclick="startCallSimulation()"
+                                        style="margin-top: 0; width: auto; padding: 0.6rem 1.75rem; border-radius: 20px;">📞
+                                        Answer Mock Call</button>
+                                </div>
+
+                                <div id="sim-active-panel" style="display: none; flex-direction: column; gap: 0.75rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.3); border-radius: 10px;"
+                                        id="sim-status-banner">
+                                        <span style="font-size: 0.78rem; font-weight: 600; color: var(--orange);"
+                                            id="sim-caller-label">Caller: Bank OTP Department</span>
+                                        <span
+                                            style="font-variant-numeric: tabular-nums; font-size: 0.8rem; font-weight: 700;"
+                                            id="sim-duration">00:00</span>
+                                    </div>
+
+                                    <div style="font-size: 0.75rem; color: var(--muted); font-weight:600;">Incoming Live
+                                        Transcript Stream:</div>
+                                    <div id="sim-transcript-stream"
+                                        style="flex: 1; height: 110px; min-height: 110px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.85rem; font-size: 0.85rem; line-height: 1.5; color: var(--text);">
+                                    </div>
+
+                                    <div class="suggestions-wrap show" id="sim-warnings-wrap"
+                                        style="display: none; margin-top: 0.5rem;">
+                                        <div class="suggestions-title" style="font-size: 0.75rem;">⚠️ Real-time Spam
+                                            Signals Flagged</div>
+                                        <div id="sim-warnings-list"
+                                            style="display:flex; flex-direction:column; gap:0.25rem;"></div>
+                                    </div>
+
+                                    <button class="btn" onclick="stopCallSimulation()"
+                                        style="margin-top: 0.5rem; background: linear-gradient(135deg, var(--red), #dc2626); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                                        🔴 Hang Up Call
+                                    </button>
+                                </div>
+                                <div class="error-msg" id="err-sim"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -1663,8 +1730,11 @@
                                 <div class="result" id="res-text"></div>
                                 <div class="result" id="res-audio"></div>
                                 <div class="result" id="res-record"></div>
+                                <div class="result" id="res-simulate"></div>
                             </div>
                         </div>
+
+
                     </div>
 
                 </div>
@@ -1890,7 +1960,7 @@
                 document.getElementById('content-' + btn.dataset.tab).classList.add('active');
 
                 // Switch corresponding result view
-                const tabsList = ['text', 'audio', 'record'];
+                const tabsList = ['text', 'audio', 'record', 'simulate'];
                 tabsList.forEach(t => {
                     const res = document.getElementById('res-' + t);
                     if (res) res.classList.remove('show');
@@ -2011,16 +2081,54 @@
             const r = document.getElementById(resId); r.classList.remove('show'); r.innerHTML = '';
         }
 
-        function updateStats(isSpam) {
+        let currentAnalysisResult = null;
+        let flaggedKeywords = {};
+
+        function updateStats(isSpam, text) {
             stats.total++;
             if (isSpam) stats.spam++; else stats.safe++;
             showAlert(isSpam);
+
+            if (isSpam && text) {
+                trackKeywords(text);
+            }
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [stats.safe, stats.spam];
+                chartInstance.update();
+            }
+        }
+
+        function trackKeywords(text) {
+            if (!text) return;
+            const textLower = text.toLowerCase();
+            SPAM_KW.forEach(kw => {
+                if (textLower.includes(kw)) {
+                    flaggedKeywords[kw] = (flaggedKeywords[kw] || 0) + 1;
+                }
+            });
+            renderKeywordCloud();
+        }
+
+        function renderKeywordCloud() {
+            const container = document.getElementById('keyword-cloud');
+            const keys = Object.keys(flaggedKeywords);
+            if (keys.length === 0) {
+                container.innerHTML = `<span style="font-size: 0.75rem; color: var(--muted);">No spam keywords flagged yet.</span>`;
+                return;
+            }
+            container.innerHTML = keys.map(k => {
+                const count = flaggedKeywords[k];
+                const fontSize = Math.min(1.2, 0.75 + (count * 0.1));
+                return `<span class="sample-chip" style="font-size: ${fontSize}rem; cursor: default; margin: 0; background: rgba(239, 68, 68, 0.1); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2)">${k} (${count})</span>`;
+            }).join('');
         }
 
         function renderResult(container, data) {
+            currentAnalysisResult = data;
             const isSpam = data.label === 'Spam';
             document.getElementById('result-placeholder').style.display = 'none';
-            ['res-text', 'res-audio', 'res-record'].forEach(i => { if (i !== container.id) document.getElementById(i).classList.remove('show'); });
+            ['res-text', 'res-audio', 'res-record', 'res-simulate'].forEach(i => { if (i !== container.id) document.getElementById(i).classList.remove('show'); });
 
             let html = `
             <div class="result-header">
@@ -2043,20 +2151,105 @@
                 const display = `🤖 AI Voice (${aiP}%) &nbsp;|&nbsp; 👤 Human Voice (${huP}%)`;
                 html += `<div class="voice-badge ${isAI ? 'ai' : 'human'}">${display}</div>`;
             }
+
+            if (data.features) {
+                html += `
+                <div class="acoustic-breakdown" style="margin-top: 1rem; padding: 0.85rem; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px;">
+                    <div style="font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;">Acoustic Detail Breakdown</div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
+                            <span>Pitch Variance (Std Dev)</span>
+                            <span style="font-weight:600; color:${data.features.pitch_std < 35 ? 'var(--red)' : 'var(--green)'}">${data.features.pitch_std} Hz (Target: >35)</span>
+                        </div>
+                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:${Math.min(100, (data.features.pitch_std / 60) * 100)}%; background:${data.features.pitch_std < 35 ? 'var(--red)' : 'var(--green)'}"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
+                            <span>Spectral Flatness</span>
+                            <span style="font-weight:600; color:${data.features.flatness_std < 0.04 ? 'var(--red)' : 'var(--green)'}">${data.features.flatness_std} (Target: >0.04)</span>
+                        </div>
+                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:${Math.min(100, (data.features.flatness_std / 0.1) * 100)}%; background:${data.features.flatness_std < 0.04 ? 'var(--red)' : 'var(--green)'}"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
+                            <span>MFCC Delta (Voice Modulation)</span>
+                            <span style="font-weight:600; color:${data.features.mfcc_delta_mean < 3.0 ? 'var(--red)' : 'var(--green)'}">${data.features.mfcc_delta_mean} (Target: >3.0)</span>
+                        </div>
+                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:${Math.min(100, (data.features.mfcc_delta_mean / 5) * 100)}%; background:${data.features.mfcc_delta_mean < 3.0 ? 'var(--red)' : 'var(--green)'}"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
+                            <span>Harmonic-to-Noise Ratio (HNR)</span>
+                            <span style="font-weight:600; color:${data.features.hnr > 10 ? 'var(--red)' : 'var(--green)'}">${data.features.hnr} dB (Target: <10)</span>
+                        </div>
+                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:${Math.min(100, (data.features.hnr / 20) * 100)}%; background:${data.features.hnr > 10 ? 'var(--red)' : 'var(--green)'}"></div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
             if (data.transcript) {
                 html += `<div class="transcript-box">${data.transcript}</div>`;
             }
 
+            html += `
+            <button class="btn btn-outline btn-sm" onclick="downloadReport()" style="width: 100%; margin-top: 1rem; border-radius: 12px;">
+                📥 Export Clean Text Report
+            </button>`;
+
             container.innerHTML = html;
             container.classList.add('show');
-            updateStats(isSpam);
+
+            let txt = data.transcript;
+            if (!txt && container.id === 'res-text') {
+                txt = document.getElementById('input-text').value.trim();
+            }
+            updateStats(isSpam, txt);
         }
 
-        function exportReport(json) {
-            const blob = new Blob([json], { type: 'application/json' });
+        function downloadReport() {
+            if (!currentAnalysisResult) return;
+            const d = currentAnalysisResult;
+            const ts = new Date().toLocaleString();
+            let report = `======================================\n`;
+            report += `       SPAMSHIELD AI ANALYSIS REPORT   \n`;
+            report += `======================================\n`;
+            report += `Generated: ${ts}\n`;
+            report += `Overall Status: ${d.label.toUpperCase()}\n`;
+            report += `Confidence: ${d.confidence}%\n\n`;
+            report += `Safe Ratio: ${d.probabilities['Not Spam']}%\n`;
+            report += `Spam Ratio: ${d.probabilities['Spam']}%\n`;
+            if (d.voice_type) {
+                report += `Voice Evaluation: ${d.voice_type} (${d.voice_confidence}% confidence)\n`;
+                if (d.features) {
+                    report += `\nAcoustic Voice Details:\n`;
+                    report += `  - Pitch Std Dev: ${d.features.pitch_std} Hz\n`;
+                    report += `  - Spectral Flatness: ${d.features.flatness_std}\n`;
+                    report += `  - MFCC Delta: ${d.features.mfcc_delta_mean}\n`;
+                    report += `  - Harmonic-to-Noise Ratio: ${d.features.hnr} dB\n`;
+                }
+            }
+            if (d.transcript) {
+                report += `\n--------------------------------------\n`;
+                report += `Call Transcript:\n${d.transcript}\n`;
+            }
+            report += `======================================\n`;
+
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'spamshield-report-' + Date.now() + '.json';
+            a.download = `spamshield-report-${Date.now()}.txt`;
             a.click();
         }
 
@@ -2159,6 +2352,245 @@
                 addHistory(data.transcript || 'Live Recording', data);
             } catch (e) { showError('err-record', e.message); }
             finally { btn.disabled = false; btn.innerHTML = '⚡ Analyze Recording'; }
+        }
+
+        // --- Chart & Keyword Initialization ---
+        let chartInstance = null;
+        function initChart() {
+            const ctx = document.getElementById('analytics-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Safe Calls', 'Spam Calls'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 255, 255, 0.08)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#8b85a8',
+                                font: { family: 'Outfit', size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            selectSimScenario(0);
+        });
+
+        // --- Live Call Simulator ---
+        const SIM_SCENARIOS = [
+            {
+                name: "Bank Security Department (OTP Phishing)",
+                avatar: "🏦",
+                desc: "Impersonates a bank support agent requesting an immediate OTP release to unlock a card.",
+                caller: "HDFC Verification Office",
+                dialogue: [
+                    "Hello, am I speaking with the account holder?",
+                    "This is security officer Vikram from your bank. We noticed an unauthorized transaction of forty-five thousand rupees.",
+                    "We have temporarily suspended your debit card to prevent fraudulent transfers.",
+                    "An SMS with a pre-verification security OTP code has been sent to your registered mobile number.",
+                    "Kindly read out the OTP immediately so we can block the transaction and restore your account.",
+                    "Hurry up, sir, if the timer expires, the money will be permanently deducted from your account. Share the OTP now."
+                ]
+            },
+            {
+                name: "Central Bureau Court Threat (Government Scam)",
+                avatar: "🏛️",
+                desc: "Threatens legal arrest unless funds are immediately transferred to a 'safe verification account'.",
+                caller: "District Judicial Division",
+                dialogue: [
+                    "Greeting. This call is from the official investigation head office regarding an outstanding warrant.",
+                    "Your name has been linked to a money laundering and tax avoidance case involving illegal international bank accounts.",
+                    "The local police division has issued an arrest warrant. A patrol unit is being dispatched to your address.",
+                    "To clear your status and cooperate, you must transfer a security deposit to our government treasury vault.",
+                    "Do not hang up this call, or we will declare your bank account frozen and take immediate custody.",
+                    "Confirm your banking details to initiate the sovereign verification deposit right away."
+                ]
+            },
+            {
+                name: "International Mega Lottery Winner (Lottery Scam)",
+                avatar: "🎁",
+                desc: "Claims you won a massive prize but demands a small Processing Fee via gift cards or transfer.",
+                caller: "Lucky Draw Promotions Department",
+                dialogue: [
+                    "Hello! Congratulations, you have been selected as the grand prize winner of this year's promo draw!",
+                    "You have won a brand new electric car and a twenty lakh cash prize, free of taxes.",
+                    "To claim this prize, your unique code is prize winner ninety-nine.",
+                    "You must call our claims manager and purchase a five hundred dollar gift card for the customs clearance charges.",
+                    "Once you email us the gift card voucher details, we will release your cash prize directly to your home.",
+                    "Remember, this is a limited time promo draw, so claim your prize before the registration closes."
+                ]
+            },
+            {
+                name: "Express Courier Delivery confirmation (Safe Call)",
+                avatar: "📦",
+                desc: "A completely normal delivery delivery agent checking package details and address.",
+                caller: "BlueDart Delivery Agent",
+                dialogue: [
+                    "Hello, good afternoon. I am calling from BlueDart Express.",
+                    "I have a business package under your name ready to be delivered today.",
+                    "Are you available at your home address in the next one hour to receive this package?",
+                    "The parcel is prepaid, so you do not need to make any payments.",
+                    "Could you confirm if your house number is forty-two, next to the local community park?",
+                    "Okay, thank you so much for confirming. I will arrive in fifteen minutes. Have a nice day!"
+                ]
+            }
+        ];
+
+        let activeSimScenarioIndex = 0;
+        let simInterval = null;
+        let simSecsInterval = null;
+        let simSeconds = 0;
+        let simCurrentLine = 0;
+        let simTranscript = "";
+
+        function selectSimScenario(idx) {
+            activeSimScenarioIndex = idx;
+            const s = SIM_SCENARIOS[idx];
+            document.getElementById('sim-avatar').textContent = s.avatar;
+            document.getElementById('sim-title').textContent = s.name;
+            document.getElementById('sim-desc').textContent = s.desc;
+            document.getElementById('sim-control-panel').style.display = 'block';
+            document.getElementById('sim-active-panel').style.display = 'none';
+            stopCallSimulation();
+        }
+
+        function startCallSimulation() {
+            document.getElementById('sim-control-panel').style.display = 'none';
+            document.getElementById('sim-active-panel').style.display = 'flex';
+
+            const s = SIM_SCENARIOS[activeSimScenarioIndex];
+            document.getElementById('sim-caller-label').textContent = "Caller: " + s.caller;
+            document.getElementById('sim-duration').textContent = "00:00";
+            document.getElementById('sim-transcript-stream').textContent = "";
+            document.getElementById('sim-warnings-wrap').style.display = 'none';
+            document.getElementById('sim-warnings-list').innerHTML = "";
+
+            simSeconds = 0;
+            simCurrentLine = 0;
+            simTranscript = "";
+
+            simSecsInterval = setInterval(() => {
+                simSeconds++;
+                const m = String(Math.floor(simSeconds / 60)).padStart(2, '0');
+                const sec = String(simSeconds % 60).padStart(2, '0');
+                document.getElementById('sim-duration').textContent = m + ':' + sec;
+            }, 1000);
+
+            printNextDialogueLine();
+        }
+
+        function printNextDialogueLine() {
+            const s = SIM_SCENARIOS[activeSimScenarioIndex];
+            if (simCurrentLine >= s.dialogue.length) {
+                stopCallSimulation(true);
+                return;
+            }
+
+            const lineText = s.dialogue[simCurrentLine];
+            const stream = document.getElementById('sim-transcript-stream');
+
+            if (simTranscript) {
+                simTranscript += "\n\n";
+            }
+
+            let i = 0;
+            const speakTimer = setInterval(() => {
+                stream.textContent = simTranscript + lineText.slice(0, i) + " ▌";
+                stream.scrollTop = stream.scrollHeight;
+                i++;
+                if (i > lineText.length) {
+                    clearInterval(speakTimer);
+                    simTranscript += lineText;
+                    stream.textContent = simTranscript;
+
+                    analyzeSimTranscriptChunk(simTranscript);
+
+                    simCurrentLine++;
+                    simInterval = setTimeout(printNextDialogueLine, 2500);
+                }
+            }, 40);
+        }
+
+        async function analyzeSimTranscriptChunk(text) {
+            const highlighted = highlightKeywords(text);
+            try {
+                const resp = await fetch('/suggestions', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await resp.json();
+                const warningsWrap = document.getElementById('sim-warnings-wrap');
+                const warningsList = document.getElementById('sim-warnings-list');
+                if (data.suggestions && data.suggestions.length > 0) {
+                    warningsList.innerHTML = data.suggestions.map(w => `<div class="suggestion-item">${w}</div>`).join('');
+                    warningsWrap.style.display = 'block';
+                } else {
+                    warningsWrap.style.display = 'none';
+                }
+            } catch (e) { }
+        }
+
+        async function stopCallSimulation(completed = false) {
+            clearInterval(simSecsInterval);
+            clearTimeout(simInterval);
+
+            if (completed && simTranscript) {
+                const text = simTranscript;
+                try {
+                    const resp = await fetch('/predict/text', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text })
+                    });
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        data.voice_type = activeSimScenarioIndex === 3 ? "Human" : "AI Generated";
+                        data.voice_confidence = 88.5;
+                        data.ai_prob = activeSimScenarioIndex === 3 ? 11.5 : 88.5;
+                        data.human_prob = activeSimScenarioIndex === 3 ? 88.5 : 11.5;
+                        data.features = activeSimScenarioIndex === 3 ? {
+                            pitch_std: 42.5,
+                            flatness_std: 0.055,
+                            rolloff_std: 850.0,
+                            mfcc_delta_mean: 4.2,
+                            hnr: 6.5
+                        } : {
+                            pitch_std: 12.4,
+                            flatness_std: 0.012,
+                            rolloff_std: 280.0,
+                            mfcc_delta_mean: 1.2,
+                            hnr: 12.8
+                        };
+                        data.transcript = text;
+
+                        const resContainer = document.getElementById('res-simulate');
+                        renderResult(resContainer, data);
+                        addHistory("Simulated: " + SIM_SCENARIOS[activeSimScenarioIndex].name, data);
+
+                        document.getElementById('result-placeholder').style.display = 'none';
+                        ['res-text', 'res-audio', 'res-record', 'res-simulate'].forEach(i => {
+                            document.getElementById(i).classList.remove('show');
+                        });
+                        resContainer.classList.add('show');
+                    }
+                } catch (e) { }
+            }
+
+            document.getElementById('sim-control-panel').style.display = 'block';
+            document.getElementById('sim-active-panel').style.display = 'none';
         }
 
     </script>
