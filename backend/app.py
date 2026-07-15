@@ -6,6 +6,7 @@ if os.name == "nt":
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
@@ -220,6 +221,11 @@ def transcribe(audio_path: str, language: str = None) -> dict:
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse(request, "index.html")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return FileResponse("static/favicon.png", media_type="image/png")
 
 
 @app.get("/health")
