@@ -38,7 +38,7 @@ model.to(device)
 model.eval()
 print("Model loaded successfully!")
 
-whisper_model = None
+whisper_model = whisper.load_model("tiny")
 model_lock = threading.Lock()
 
 LANGUAGE_MAP = {
@@ -51,10 +51,6 @@ LANGUAGE_MAP = {
 
 def get_whisper():
     global whisper_model
-    if whisper_model is None:
-        print("Loading Whisper...")
-        whisper_model = whisper.load_model("tiny")
-        print("Whisper loaded!")
     return whisper_model
 
 
@@ -83,7 +79,7 @@ def classify(text: str) -> dict:
 
 def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
     try:
-        y, sr = librosa.load(audio_path, sr=16000, mono=True)
+        y, sr = librosa.load(audio_path, sr=16000, mono=True, duration=8.0)
 
         # 1. Pitch analysis — AI voices have very low pitch variance
         f0, _, _ = librosa.pyin(y, fmin=60, fmax=400, sr=sr)
