@@ -18,6 +18,7 @@ import tempfile
 import shutil
 import numpy as np
 import librosa
+import threading
 
 app = FastAPI(title="AI Spam Call Detection API", version="1.0")
 
@@ -38,6 +39,7 @@ model.eval()
 print("Model loaded successfully!")
 
 whisper_model = None
+model_lock = threading.Lock()
 
 LANGUAGE_MAP = {
     "auto": None,
@@ -64,7 +66,8 @@ def classify(text: str) -> dict:
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
-        outputs = model(**inputs)
+        with model_lock:
+            outputs = model(**inputs)
     probs = torch.softmax(outputs.logits, dim=1)[0]
     prediction = probs.argmax().item()
     label = "Spam" if prediction == 1 else "Not Spam"
@@ -215,7 +218,8 @@ def transcribe(audio_path: str, language: str = None) -> dict:
     options = {"task": "transcribe", "fp16": False}
     if language and language not in ("auto",):
         options["language"] = language  # Hint for better detection accuracy
-    result = wmodel.transcribe(audio_path, **options)
+    with model_lock:
+        result = wmodel.transcribe(audio_path, **options)
     transcript = result["text"].strip()
     detected_lang = result.get("language", "unknown")
     return {"transcript": transcript, "detected_language": detected_lang}
