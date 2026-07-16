@@ -2226,53 +2226,6 @@
                 html += `<div class="voice-badge ${isAI ? 'ai' : 'human'}">${display}</div>`;
             }
 
-            if (data.features) {
-                html += `
-                <div class="acoustic-breakdown" style="margin-top: 1rem; padding: 0.85rem; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px;">
-                    <div style="font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;">Acoustic Detail Breakdown</div>
-                    
-                    <div style="margin-bottom: 0.5rem;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
-                            <span>Pitch Variance (Std Dev)</span>
-                            <span style="font-weight:600; color:${data.features.pitch_std < 35 ? 'var(--red)' : 'var(--green)'}">${data.features.pitch_std} Hz (Target: >35)</span>
-                        </div>
-                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
-                            <div style="height:100%; width:${Math.min(100, (data.features.pitch_std / 60) * 100)}%; background:${data.features.pitch_std < 35 ? 'var(--red)' : 'var(--green)'}"></div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 0.5rem;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
-                            <span>Spectral Flatness</span>
-                            <span style="font-weight:600; color:${data.features.flatness_std < 0.04 ? 'var(--red)' : 'var(--green)'}">${data.features.flatness_std} (Target: >0.04)</span>
-                        </div>
-                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
-                            <div style="height:100%; width:${Math.min(100, (data.features.flatness_std / 0.1) * 100)}%; background:${data.features.flatness_std < 0.04 ? 'var(--red)' : 'var(--green)'}"></div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 0.5rem;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
-                            <span>MFCC Delta (Voice Modulation)</span>
-                            <span style="font-weight:600; color:${data.features.mfcc_delta_mean < 3.0 ? 'var(--red)' : 'var(--green)'}">${data.features.mfcc_delta_mean} (Target: >3.0)</span>
-                        </div>
-                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
-                            <div style="height:100%; width:${Math.min(100, (data.features.mfcc_delta_mean / 5) * 100)}%; background:${data.features.mfcc_delta_mean < 3.0 ? 'var(--red)' : 'var(--green)'}"></div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:0.15rem;">
-                            <span>Harmonic-to-Noise Ratio (HNR)</span>
-                            <span style="font-weight:600; color:${data.features.hnr > 10 ? 'var(--red)' : 'var(--green)'}">${data.features.hnr} dB (Target: <10)</span>
-                        </div>
-                        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
-                            <div style="height:100%; width:${Math.min(100, (data.features.hnr / 20) * 100)}%; background:${data.features.hnr > 10 ? 'var(--red)' : 'var(--green)'}"></div>
-                        </div>
-                    </div>
-                </div>`;
-            }
-
             if (data.transcript) {
                 html += `<div class="transcript-box">${data.transcript}</div>`;
             }
