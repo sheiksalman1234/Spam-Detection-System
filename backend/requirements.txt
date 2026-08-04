@@ -11,3 +11,4 @@ pydantic
 python-multipart
 Jinja2
 python-dotenv
+deep-translator
