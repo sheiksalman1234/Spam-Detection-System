@@ -43,18 +43,19 @@ templates = Jinja2Templates(directory="templates")
 
 MODEL_NAME = "Salmansheik/spam-call-detector"
 
-print("Loading tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+tokenizer = None
+model = None
+device = torch.device("cpu")
 
-print("Loading model...")
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+def load_classifier():
+    global tokenizer, model, device
+    if model is None:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+        model.to(device)
+        model.eval()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-model.eval()
-print("Model loaded successfully!")
-
-whisper_model = whisper.load_model("tiny")
+whisper_model = None
 model_lock = threading.Lock()
 
 LANGUAGE_MAP = {
@@ -101,6 +102,8 @@ TRANSLATION_MAP = {
 
 def get_whisper():
     global whisper_model
+    if whisper_model is None:
+        whisper_model = whisper.load_model("tiny")
     return whisper_model
 
 
@@ -109,6 +112,7 @@ class TextRequest(BaseModel):
 
 
 def classify(text: str) -> dict:
+    load_classifier()
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():

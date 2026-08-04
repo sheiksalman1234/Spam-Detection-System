@@ -13,12 +13,7 @@ RUN pip install --upgrade pip && \
 ENV XDG_CACHE_HOME=/app/.cache
 ENV HF_HOME=/app/.cache/huggingface
 
-# Pre-download models at build time so Render/Railway cold-starts are instant
-# Whisper tiny model (~39 MB)
-RUN python -c "import whisper; whisper.load_model('tiny')"
-
-# HuggingFace spam-call-detector model
-RUN python -c "from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained('Salmansheik/spam-call-detector'); AutoModelForSequenceClassification.from_pretrained('Salmansheik/spam-call-detector')"
+# Models will be downloaded on first request (lazy loading)
 
 COPY . .
 
