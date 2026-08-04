@@ -1695,6 +1695,9 @@
                                     <option value="en">🇬🇧 English</option>
                                     <option value="hi">🇮🇳 Hindi</option>
                                     <option value="te">🇮🇳 Telugu</option>
+                                    <option value="ta">🇮🇳 Tamil</option>
+                                    <option value="kn">🇮🇳 Kannada</option>
+                                    <option value="ml">🇮🇳 Malayalam</option>
                                 </select>
                                 <div class="drop-zone" id="drop-zone">
                                     <div class="icon">📁</div>
@@ -2149,14 +2152,27 @@
             try {
                 const fd = new FormData();
                 fd.append('file', fileInput.files[0]);
-                fd.append('language', document.getElementById('lang-select').value);
+                const selectedLang = document.getElementById('lang-select').value;
+                fd.append('language', selectedLang);
                 const resp = await fetch('/transcribe', { method: 'POST', body: fd });
                 const txt = await resp.text();
                 let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Failed');
-                document.getElementById('extracted-text').value = data.transcript;
+                // Always show translated_transcript when a specific language is selected
+                let displayText;
+                if (selectedLang !== 'auto' && data.translated_transcript) {
+                    displayText = data.translated_transcript;
+                } else {
+                    displayText = data.transcript;
+                }
+                document.getElementById('extracted-text').value = displayText;
+                const langName = LANGUAGE_NAMES[selectedLang] || 'Auto';
+                document.querySelector('.extracted-label').textContent =
+                    selectedLang === 'auto' ? 'Extracted Transcript' : 'Extracted Transcript (' + langName + ')';
                 document.getElementById('extracted-wrap').classList.add('show');
-            } catch (e) { showError('err-audio', e.message); }
+            } catch (e) {
+                showError('err-audio', e.message);
+            }
             finally { btn.disabled = false; btn.textContent = '🔍 Extract Text'; }
         }
 
@@ -2227,7 +2243,13 @@
             }
 
             if (data.transcript) {
-                html += `<div class="transcript-box">${data.transcript}</div>`;
+                html += `<div class="transcript-box"><strong>Original Transcript:</strong><br>${data.transcript}</div>`;
+            }
+
+            if (data.translated_transcript && data.translated_transcript !== data.transcript) {
+                const langCode = data.output_language || data.selected_language || 'en';
+                const langName = LANGUAGE_NAMES[langCode] || langCode.toUpperCase();
+                html += `<div class="transcript-box" style="margin-top: 0.75rem; border-left: 3px solid var(--accent);"><strong>Translated Transcript (${langName}):</strong><br>${data.translated_transcript}</div>`;
             }
 
             html += `
@@ -2244,6 +2266,15 @@
             }
             updateStats(isSpam, txt);
         }
+
+        const LANGUAGE_NAMES = {
+            'en': 'English',
+            'hi': 'Hindi',
+            'te': 'Telugu',
+            'ta': 'Tamil',
+            'kn': 'Kannada',
+            'ml': 'Malayalam'
+        };
 
         function downloadReport() {
             if (!currentAnalysisResult) return;
@@ -2309,13 +2340,15 @@
             try {
                 const fd = new FormData();
                 fd.append('file', fileInput.files[0]);
-                fd.append('language', 'auto');
+                const selectedLang = document.getElementById('lang-select').value;
+                fd.append('language', selectedLang);
                 const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
                 const txt = await resp.text();
                 let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
+                data.selected_language = selectedLang;
                 renderResult(document.getElementById('res-audio'), data);
-                addHistory(data.transcript || fileInput.files[0].name, data);
+                addHistory(data.translated_transcript || data.transcript || fileInput.files[0].name, data);
             } catch (e) { showError('err-audio', e.message); }
             finally { setLoading(btn, false); }
         }
@@ -2373,13 +2406,15 @@
             try {
                 const fd = new FormData();
                 fd.append('file', new File([recBlob], 'recording.webm', { type: 'audio/webm' }));
-                fd.append('language', 'auto');
+                const selectedLang = document.getElementById('lang-select').value;
+                fd.append('language', selectedLang);
                 const resp = await fetch('/predict/audio', { method: 'POST', body: fd });
                 const txt = await resp.text();
                 let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
+                data.selected_language = selectedLang;
                 renderResult(document.getElementById('res-record'), data);
-                addHistory(data.transcript || 'Live Recording', data);
+                addHistory(data.translated_transcript || data.transcript || 'Live Recording', data);
             } catch (e) { showError('err-record', e.message); }
             finally { btn.disabled = false; btn.innerHTML = '⚡ Analyze Recording'; }
         }

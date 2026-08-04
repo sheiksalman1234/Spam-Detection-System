@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+torch
+transformers
+openai-whisper
+librosa
+numpy
+scipy
+google-genai
+pydantic
+python-multipart
+Jinja2
+python-dotenv
