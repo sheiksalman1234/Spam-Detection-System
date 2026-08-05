@@ -2,7 +2,7 @@ fastapi
 uvicorn
 torch
 transformers
-openai-whisper
+SpeechRecognition
 librosa
 numpy
 scipy

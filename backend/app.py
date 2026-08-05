@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import whisper
+import speech_recognition as sr
 import tempfile
 import shutil
 import numpy as np
@@ -59,13 +59,13 @@ whisper_model = None
 model_lock = threading.Lock()
 
 LANGUAGE_MAP = {
-    "auto": None,
-    "en": "en",
-    "hi": "hi",
-    "te": "te",
-    "ta": "ta",
-    "kn": "kn",
-    "ml": "ml"
+    "auto": "en-US",
+    "en": "en-US",
+    "hi": "hi-IN",
+    "te": "en-US",  # Telugu not supported by Google Speech API, fallback to English
+    "ta": "ta-IN",
+    "kn": "en-US",  # Kannada not supported, fallback to English
+    "ml": "ml-IN"
 }
 
 # Configure Gemini API
@@ -103,7 +103,9 @@ TRANSLATION_MAP = {
 def get_whisper():
     global whisper_model
     if whisper_model is None:
-        whisper_model = whisper.load_model("tiny")
+        print("[INFO] Initializing speech recognizer...")
+        whisper_model = sr.Recognizer()
+        print("[OK] Speech recognizer ready")
     return whisper_model
 
 
@@ -267,15 +269,24 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
 
 
 def transcribe(audio_path: str, language: str = None) -> dict:
-    wmodel = get_whisper()
-    options = {"task": "transcribe", "fp16": False}
-    if language and language not in ("auto",):
-        options["language"] = language
-    with model_lock:
-        result = wmodel.transcribe(audio_path, **options)
-    transcript = result["text"].strip()
-    detected_lang = result.get("language", "unknown")
-    return {"transcript": transcript, "detected_language": detected_lang}
+    recognizer = get_whisper()
+    try:
+        with sr.AudioFile(audio_path) as source:
+            audio = recognizer.record(source)
+        
+        # Use Google Speech Recognition API (free, no key required)
+        try:
+            transcript = recognizer.recognize_google(audio, language=language or 'en-US')
+            detected_lang = language or 'en'
+            return {"transcript": transcript, "detected_language": detected_lang}
+        except sr.UnknownValueError:
+            return {"transcript": "", "detected_language": "unknown"}
+        except sr.RequestError as e:
+            print(f"[ERR] Google Speech API error: {e}")
+            return {"transcript": "", "detected_language": "unknown"}
+    except Exception as e:
+        print(f"[ERR] Transcription error: {e}")
+        return {"transcript": "", "detected_language": "unknown"}
 
 
 def translate_text(text: str, target_lang: str) -> str:
