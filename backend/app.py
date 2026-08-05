@@ -53,7 +53,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-MODEL_NAME = "Salmansheik/spam-call-detector"
+MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 tokenizer = None
 model = None
