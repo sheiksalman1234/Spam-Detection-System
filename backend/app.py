@@ -9,7 +9,7 @@ os.environ["HF_TOKEN"] = "HFAKQ9qqyuUlKhKapfVrNPHSV0m4ZgO"
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 if os.name == "nt":
-    os.environ["PATH"] = r"C:\ffmpeg\bin;" + os.environ.get("PATH", ""
+    os.environ["PATH"] = r"C:\ffmpeg\bin;" + os.environ.get("PATH", "")
 
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
