@@ -62,10 +62,18 @@ device = torch.device("cpu")
 def load_classifier():
     global tokenizer, model, device
     if model is None:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-        model.to(device)
-        model.eval()
+        try:
+            print("[INFO] Loading spam classifier...")
+            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+            print("[INFO] Tokenizer loaded")
+            model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+            print("[INFO] Model loaded")
+            model.to(device)
+            model.eval()
+            print("[OK] Spam classifier ready")
+        except Exception as e:
+            print(f"[ERR] Failed to load classifier: {str(e)}")
+            raise
 
 whisper_model = None
 model_lock = threading.Lock()
