@@ -393,7 +393,11 @@ def get_suggestions(data: TextRequest):
 def predict_text(data: TextRequest):
     if not data.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
-    return classify(data.text)
+    try:
+        return classify(data.text)
+    except Exception as e:
+        print(f"[ERR] /predict/text error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/transcribe")
