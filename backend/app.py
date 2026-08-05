@@ -312,6 +312,7 @@ def translate_text(text: str, target_lang: str) -> str:
 
 
 @app.get("/")
+@app.head("/")
 def home(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
@@ -322,6 +323,7 @@ def favicon():
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "OK", "device": str(device)}
 
