@@ -3,9 +3,6 @@ import warnings
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-# Set HuggingFace token for faster model downloads
-os.environ["HF_TOKEN"] = "HFAKQ9qqyuUlKhKapfVrNPHSV0m4ZgO"
-
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 if os.name == "nt":
@@ -19,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import speech_recognition as sr
+import whisper
 import tempfile
 import shutil
 import numpy as np
@@ -53,7 +50,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
+MODEL_NAME = "Salmansheik/spam-call-detector"
 
 tokenizer = None
 model = None
@@ -123,9 +120,9 @@ TRANSLATION_MAP = {
 def get_whisper():
     global whisper_model
     if whisper_model is None:
-        print("[INFO] Initializing speech recognizer...")
-        whisper_model = sr.Recognizer()
-        print("[OK] Speech recognizer ready")
+        print("[INFO] Loading Whisper model...")
+        whisper_model = whisper.load_model("tiny")
+        print("[OK] Whisper model ready")
     return whisper_model
 
 
@@ -305,24 +302,15 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
 
 
 def transcribe(audio_path: str, language: str = None) -> dict:
-    recognizer = get_whisper()
-    try:
-        with sr.AudioFile(audio_path) as source:
-            audio = recognizer.record(source)
-        
-        # Use Google Speech Recognition API (free, no key required)
-        try:
-            transcript = recognizer.recognize_google(audio, language=language or 'en-US')
-            detected_lang = language or 'en'
-            return {"transcript": transcript, "detected_language": detected_lang}
-        except sr.UnknownValueError:
-            return {"transcript": "", "detected_language": "unknown"}
-        except sr.RequestError as e:
-            print(f"[ERR] Google Speech API error: {e}")
-            return {"transcript": "", "detected_language": "unknown"}
-    except Exception as e:
-        print(f"[ERR] Transcription error: {e}")
-        return {"transcript": "", "detected_language": "unknown"}
+    wmodel = get_whisper()
+    options = {"task": "transcribe", "fp16": False}
+    if language and language not in ("auto",):
+        options["language"] = language
+    with model_lock:
+        result = wmodel.transcribe(audio_path, **options)
+    transcript = result["text"].strip()
+    detected_lang = result.get("language", "unknown")
+    return {"transcript": transcript, "detected_language": detected_lang}
 
 
 def translate_text(text: str, target_lang: str) -> str:
@@ -359,7 +347,6 @@ def translate_text(text: str, target_lang: str) -> str:
 
 
 @app.get("/")
-@app.head("/")
 def home(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
@@ -370,7 +357,6 @@ def favicon():
 
 
 @app.get("/health")
-@app.head("/health")
 def health():
     return {"status": "OK", "device": str(device)}
 
