@@ -1,7 +1,13 @@
 venv/
+venv311/
 backend/venv/
 .git
 .vscode
 __pycache__/
 *.pyc
 upload.zip
+.env
+*.md
+*.bat
+backend/uploads/
+backend/model/

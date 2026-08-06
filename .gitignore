@@ -1,5 +1,6 @@
 # Virtual environments
 venv/
+venv311/
 backend/venv/
 
 # Python
@@ -8,6 +9,9 @@ __pycache__/
 
 # Uploads
 backend/uploads/
+
+# Local model cache (downloaded at runtime)
+backend/model/
 
 # Zip files
 *.zip

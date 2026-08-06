@@ -2319,16 +2319,22 @@
             if (!text) { showError('err-text', 'Please enter some text.'); return; }
             setLoading(btn, true);
             try {
+                console.log('[DEBUG] Sending text to /predict/text:', text);
                 const resp = await fetch('/predict/text', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text })
                 });
+                console.log('[DEBUG] Response status:', resp.status);
                 const txt = await resp.text();
+                console.log('[DEBUG] Response text:', txt);
                 let data; try { data = JSON.parse(txt); } catch (e) { throw new Error(txt.slice(0, 100) || `Error ${resp.status}`); }
                 if (!resp.ok) throw new Error(data.detail || 'Server error');
                 renderResult(document.getElementById('res-text'), data);
                 addHistory(text, data);
-            } catch (e) { showError('err-text', e.message); }
+            } catch (e) { 
+                console.error('[ERROR] analyzeText failed:', e);
+                showError('err-text', e.message); 
+            }
             finally { setLoading(btn, false); }
         }
 

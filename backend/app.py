@@ -46,6 +46,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+def startup_event():
+    """Pre-load models to avoid cold-start timeout on Render."""
+    try:
+        load_classifier()
+    except Exception as e:
+        print(f"[WARN] Startup model load failed (will retry on first request): {e}")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
