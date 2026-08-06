@@ -20,7 +20,6 @@ import whisper
 import tempfile
 import shutil
 import numpy as np
-import librosa
 import threading
 
 try:
@@ -168,81 +167,70 @@ def classify(text: str) -> dict:
 
 def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
     try:
-        y, sr = librosa.load(audio_path, sr=16000, mono=True, duration=30.0)
-
-        # 1. Pitch std — AI voices have unnaturally low pitch variance
-        f0, _, _ = librosa.pyin(y, fmin=60, fmax=400, sr=sr)
-        f0_clean = f0[~np.isnan(f0)]
-        pitch_std = float(np.std(f0_clean)) if len(f0_clean) > 10 else 999.0
-
-        # 2. Spectral flatness std — AI voices are too spectrally consistent
-        flatness = librosa.feature.spectral_flatness(y=y)[0]
-        flatness_std = float(np.std(flatness))
-
-        # 3. Spectral rolloff std
-        rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-        rolloff_std = float(np.std(rolloff))
-
-        # 4. MFCC delta — AI voices lack natural temporal variation
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=20)
-        mfcc_delta = librosa.feature.delta(mfcc)
-        mfcc_delta_mean = float(np.mean(np.abs(mfcc_delta)))
-
-        # 5. HNR — AI voices are too clean (very high harmonic ratio)
-        harmonic, percussive = librosa.effects.hpss(y)
-        hnr = float(np.mean(np.abs(harmonic)) / (np.mean(np.abs(percussive)) + 1e-6))
-
-        # 6. Zero-crossing rate std — AI voices have very uniform ZCR
-        zcr = librosa.feature.zero_crossing_rate(y)[0]
-        zcr_std = float(np.std(zcr))
-
-        # 7. Spectral centroid std — AI voices have less centroid variation
-        centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-        centroid_std = float(np.std(centroid))
-
-        # 8. Energy variance — AI voices have very steady energy levels
-        rms = librosa.feature.rms(y=y)[0]
-        rms_std = float(np.std(rms))
-        rms_mean = float(np.mean(rms)) + 1e-6
-        energy_cv = rms_std / rms_mean  # coefficient of variation
-
-        # ── Scoring (each feature votes independently, no cross-cancellation) ──
+        import scipy.io.wavfile as wavfile
+        from scipy import signal
+        
+        sr, y = wavfile.read(audio_path)
+        if len(y.shape) > 1:
+            y = y[:, 0]
+        y = y.astype(float) / np.max(np.abs(y))
+        
+        # Resample to 16kHz if needed
+        if sr != 16000:
+            num_samples = int(len(y) * 16000 / sr)
+            y = signal.resample(y, num_samples)
+            sr = 16000
+        
+        # Limit to 30 seconds
+        max_samples = int(30 * sr)
+        if len(y) > max_samples:
+            y = y[:max_samples]
+        
+        # Simple AI voice detection without Numba
         ai_votes = 0
-        total_votes = 8
-
-        # Pitch: AI < 25 Hz std
-        if pitch_std < 25:
+        total_votes = 5
+        
+        # 1. Energy variance (AI voices have steady volume)
+        frame_length = int(0.02 * sr)
+        frames = [np.sqrt(np.mean(y[i:i+frame_length]**2)) for i in range(0, len(y)-frame_length, frame_length)]
+        if len(frames) > 1:
+            energy_std = np.std(frames)
+            energy_mean = np.mean(frames)
+            energy_cv = energy_std / (energy_mean + 1e-6)
+            if energy_cv < 0.4:
+                ai_votes += 1
+        
+        # 2. Zero-crossing rate (AI voices have uniform ZCR)
+        zcr = np.mean(np.abs(np.diff(np.sign(y))))
+        if zcr < 0.1:
             ai_votes += 1
-
-        # Flatness std: AI < 0.03
-        if flatness_std < 0.03:
+        
+        # 3. Spectral centroid (AI voices have less variation)
+        fft = np.abs(np.fft.fft(y[:min(len(y), sr*2)]))
+        freqs = np.fft.fftfreq(len(fft), 1/sr)
+        centroid = np.sum(freqs[:len(freqs)//2] * fft[:len(fft)//2]) / (np.sum(fft[:len(fft)//2]) + 1e-6)
+        if centroid < 2000:
             ai_votes += 1
-
-        # Rolloff std: AI < 500
-        if rolloff_std < 500:
-            ai_votes += 1
-
-        # MFCC delta: AI < 2.5
-        if mfcc_delta_mean < 2.5:
-            ai_votes += 1
-
-        # HNR: AI > 8 (too clean)
-        if hnr > 8:
-            ai_votes += 1
-
-        # ZCR std: AI < 0.02
-        if zcr_std < 0.02:
-            ai_votes += 1
-
-        # Centroid std: AI < 400
-        if centroid_std < 400:
-            ai_votes += 1
-
-        # Energy CV: AI < 0.4 (very steady volume)
-        if energy_cv < 0.4:
-            ai_votes += 1
-
-        # Transcript heuristics — weak signals only, capped contribution
+        
+        # 4. Harmonic content (AI voices are too clean)
+        autocorr = np.correlate(y, y, mode='full')[len(y)-1:]
+        autocorr = autocorr / (autocorr[0] + 1e-6)
+        if len(autocorr) > sr//100:
+            harmonic_strength = np.max(autocorr[sr//200:sr//100])
+            if harmonic_strength > 0.7:
+                ai_votes += 1
+        
+        # 5. Pitch regularity (AI voices have robotic pitch)
+        if len(y) > sr:
+            segment = y[:sr]
+            autocorr_seg = np.correlate(segment, segment, mode='full')[len(segment)-1:]
+            autocorr_seg = autocorr_seg / (autocorr_seg[0] + 1e-6)
+            if len(autocorr_seg) > sr//200:
+                pitch_regularity = np.max(autocorr_seg[sr//200:sr//100])
+                if pitch_regularity > 0.6:
+                    ai_votes += 1
+        
+        # Transcript heuristics
         transcript_ai_bonus = 0
         if transcript:
             text_lower = transcript.lower()
@@ -250,26 +238,24 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
             filler_count = sum(text_lower.count(f) for f in fillers)
             words = text_lower.split()
             stammer_count = sum(1 for i in range(len(words) - 1) if words[i] == words[i+1] and len(words[i]) > 1)
-
+            
             if filler_count == 0 and stammer_count == 0:
-                transcript_ai_bonus = 1   # perfect fluency = slight AI signal
+                transcript_ai_bonus = 1
             elif filler_count >= 2 or stammer_count >= 1:
-                transcript_ai_bonus = -1  # clear human disfluency
-
-        # Final decision: majority vote on acoustic features + optional transcript nudge
+                transcript_ai_bonus = -1
+        
         ai_score_pct = (ai_votes / total_votes) * 100
         adjusted = ai_score_pct + (transcript_ai_bonus * 8)
         adjusted = max(0, min(100, adjusted))
-
+        
         is_ai = adjusted >= 50
-
         ai_prob = int(adjusted)
         if is_ai:
             ai_prob = max(52, ai_prob)
         else:
             ai_prob = min(48, ai_prob)
         human_prob = 100 - ai_prob
-
+        
         return {
             "voice_type": "AI Generated" if is_ai else "Human",
             "ai_score": round(adjusted, 1),
@@ -277,14 +263,15 @@ def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
             "human_prob": human_prob,
             "voice_confidence": max(ai_prob, human_prob),
             "features": {
-                "pitch_std": round(pitch_std, 2) if pitch_std != 999.0 else 0,
-                "flatness_std": round(flatness_std, 5),
-                "rolloff_std": round(rolloff_std, 2),
-                "mfcc_delta_mean": round(mfcc_delta_mean, 2),
-                "hnr": round(hnr, 2)
+                "pitch_std": 0,
+                "flatness_std": 0,
+                "rolloff_std": 0,
+                "mfcc_delta_mean": 0,
+                "hnr": 0
             }
         }
     except Exception as e:
+        print(f"[ERR] AI voice detection failed: {str(e)}")
         return {
             "voice_type": "Unknown",
             "ai_score": 0,
