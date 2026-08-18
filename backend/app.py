@@ -53,16 +53,17 @@ templates = Jinja2Templates(directory="templates")
 
 @app.on_event("startup")
 def preload_models():
-    """Preload ML models at startup so the first request doesn't timeout."""
-    try:
-        print("[STARTUP] Preloading spam classifier...")
-        load_classifier()
-        print("[STARTUP] Preloading Whisper model...")
-        get_whisper()
-        print("[STARTUP] All models loaded and ready!")
-    except Exception as e:
-        print(f"[STARTUP WARNING] Model preload failed: {e}")
-        print("[STARTUP] Models will be loaded on first request instead.")
+    """Preload the spam classifier in a background thread so the port binds immediately."""
+    def _load():
+        try:
+            print("[STARTUP] Preloading spam classifier in background...")
+            load_classifier()
+            print("[STARTUP] Spam classifier ready!")
+        except Exception as e:
+            print(f"[STARTUP WARNING] Classifier preload failed: {e}")
+    # Background thread: server binds port right away, model loads in parallel
+    threading.Thread(target=_load, daemon=True).start()
+    print("[STARTUP] Server is up — classifier loading in background...")
 
 MODEL_NAME = "Salmansheik/spam-call-detector"
 
