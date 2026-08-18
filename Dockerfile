@@ -21,6 +21,7 @@ RUN mkdir -p /app/backend/uploads
 
 WORKDIR /app/backend
 
+ENV LIGHTWEIGHT_MODE=1
 ENV PORT=8080
 
 EXPOSE ${PORT}

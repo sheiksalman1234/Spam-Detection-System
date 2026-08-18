@@ -8,19 +8,33 @@ warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
 if os.name == "nt":
     os.environ["PATH"] = r"C:\ffmpeg\bin;" + os.environ.get("PATH", "")
 
+# Detect lightweight mode (for Render free tier / low-memory environments)
+LIGHTWEIGHT_MODE = os.environ.get("LIGHTWEIGHT_MODE", "0") == "1"
+if LIGHTWEIGHT_MODE:
+    print("[MODE] Running in LIGHTWEIGHT mode — keyword-based classifier, no ML models")
+else:
+    print("[MODE] Running in FULL mode — ML models enabled")
+
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
-import whisper
 import tempfile
 import shutil
-import numpy as np
 import threading
+
+# Heavy imports only in full mode
+if not LIGHTWEIGHT_MODE:
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    import torch
+    import whisper
+    import numpy as np
+else:
+    torch = None
+    whisper = None
+    np = None
 
 try:
     from google import genai as genai_client
@@ -53,7 +67,10 @@ templates = Jinja2Templates(directory="templates")
 
 @app.on_event("startup")
 def preload_models():
-    """Preload the spam classifier in a background thread so the port binds immediately."""
+    """Preload the spam classifier in a background thread (full mode only)."""
+    if LIGHTWEIGHT_MODE:
+        print("[STARTUP] Lightweight mode — no models to preload. Server ready!")
+        return
     def _load():
         try:
             print("[STARTUP] Preloading spam classifier in background...")
@@ -61,7 +78,6 @@ def preload_models():
             print("[STARTUP] Spam classifier ready!")
         except Exception as e:
             print(f"[STARTUP WARNING] Classifier preload failed: {e}")
-    # Background thread: server binds port right away, model loads in parallel
     threading.Thread(target=_load, daemon=True).start()
     print("[STARTUP] Server is up — classifier loading in background...")
 
@@ -69,10 +85,12 @@ MODEL_NAME = "Salmansheik/spam-call-detector"
 
 tokenizer = None
 model = None
-device = torch.device("cpu")
+device = None if LIGHTWEIGHT_MODE else torch.device("cpu")
 
 def load_classifier():
     global tokenizer, model, device
+    if LIGHTWEIGHT_MODE:
+        return  # No ML model in lightweight mode
     if model is None:
         try:
             print("[INFO] Loading spam classifier...")
@@ -134,6 +152,8 @@ TRANSLATION_MAP = {
 
 def get_whisper():
     global whisper_model
+    if LIGHTWEIGHT_MODE:
+        raise RuntimeError("Whisper not available in lightweight mode")
     if whisper_model is None:
         print("[INFO] Loading Whisper model...")
         whisper_model = whisper.load_model("tiny")
@@ -145,7 +165,45 @@ class TextRequest(BaseModel):
     text: str
 
 
+# Enhanced keyword classifier for lightweight mode
+SPAM_KEYWORDS_WEIGHTED = [
+    ('otp', 3), ('prize', 3), ('won', 2), ('lottery', 3), ('gift card', 3),
+    ('loan', 2), ('pre-approved', 2), ('account blocked', 3), ('verify your account', 3),
+    ('click here', 2), ('call now', 2), ('limited time', 2), ('free', 1),
+    ('congratulations', 2), ('irs', 3), ('tax', 1), ('arrest', 3),
+    ('social security', 3), ('password', 3), ('credit card', 2),
+    ('urgent', 2), ('immediately', 2), ('suspended', 2), ('unauthorized', 2),
+    ('claim', 2), ('reward', 2), ('winner', 3), ('offer', 1), ('deal', 1),
+    ('bank', 1), ('blocked', 2), ('expire', 2), ('act now', 2),
+]
+
+def _keyword_classify(text: str) -> dict:
+    """Enhanced keyword-based spam classifier (no ML model needed)."""
+    text_lower = text.lower()
+    total_weight = sum(w for kw, w in SPAM_KEYWORDS_WEIGHTED if kw in text_lower)
+    # Score: 0-5 = safe, 6+ = spam
+    if total_weight >= 6:
+        spam_pct = min(97, 60 + (total_weight * 3))
+    elif total_weight >= 3:
+        spam_pct = 45 + (total_weight * 3)
+    else:
+        spam_pct = max(5, total_weight * 10)
+    safe_pct = 100 - spam_pct
+    is_spam = spam_pct > 50
+    return {
+        "label": "Spam" if is_spam else "Not Spam",
+        "confidence": round(max(spam_pct, safe_pct), 2),
+        "probabilities": {
+            "Not Spam": round(safe_pct, 2),
+            "Spam": round(spam_pct, 2),
+        }
+    }
+
+
 def classify(text: str) -> dict:
+    # In lightweight mode, always use keyword classifier
+    if LIGHTWEIGHT_MODE:
+        return _keyword_classify(text)
     try:
         load_classifier()
         inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
@@ -165,20 +223,8 @@ def classify(text: str) -> dict:
             }
         }
     except Exception as e:
-        print(f"[ERR] Classification failed: {str(e)}")
-        # Fallback: simple keyword-based detection
-        spam_keywords = ['otp', 'prize', 'won', 'lottery', 'loan', 'account blocked', 'verify', 'click', 'urgent']
-        text_lower = text.lower()
-        spam_score = sum(1 for kw in spam_keywords if kw in text_lower)
-        is_spam = spam_score >= 2
-        return {
-            "label": "Spam" if is_spam else "Not Spam",
-            "confidence": min(95, 50 + (spam_score * 10)),
-            "probabilities": {
-                "Not Spam": 100 - min(95, 50 + (spam_score * 10)),
-                "Spam": min(95, 50 + (spam_score * 10)),
-            }
-        }
+        print(f"[ERR] Classification failed, using keyword fallback: {str(e)}")
+        return _keyword_classify(text)
 
 
 def detect_ai_voice(audio_path: str, transcript: str = "") -> dict:
